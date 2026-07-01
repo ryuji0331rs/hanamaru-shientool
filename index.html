@@ -14,7 +14,6 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 .app{}
 .main{}
 .pg{display:none;padding:24px 28px 48px;}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .pg.on[data-page="chat"]{display:flex;flex-direction:column;min-height:100vh;}
 .pg.on{display:block;}
 .home-title{font-size:22px;font-weight:700;margin-bottom:6px;}
@@ -1512,10 +1511,12 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
           style="height:48px;width:48px;background:#fff;color:var(--nv);border:1.5px solid var(--bd);border-radius:10px;font-size:20px;cursor:pointer;flex-shrink:0;transition:all 0.2s;">🎤</button>
         <button onclick="rpSend()" id="rp-send-btn"
           style="height:48px;padding:0 20px;background:var(--nv);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;">送信</button>
+        <button onclick="rpForceFinish()" id="rp-end-btn" title="ロープレを終了して総評を見る"
+          style="height:48px;padding:0 14px;background:#fff;color:var(--rd);border:1.5px solid var(--rd);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">終了</button>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
         <div style="font-size:12px;color:var(--mu);">Shift+Enterで改行 / Enterで送信</div>
-        <div id="rp-mic-status" style="font-size:13px;font-weight:700;color:var(--rd);display:none;animation:blink 1s infinite;">🎤 今すぐ話してください！</div>
+        <div id="rp-mic-status" style="font-size:12px;color:var(--rd);display:none;">🔴 録音中…（停止で自動送信）</div>
       </div>
     </div>
 
@@ -2264,10 +2265,10 @@ async function rpSend() {
   systemPrompt += '以下のJSON形式のみで返答してください。他のテキストは一切含めないでください。\n';
   systemPrompt += '{\n';
   systemPrompt += '  "customer_reply": "お客様としての次の台詞（自然な口語で）",\n';
-  systemPrompt += '  "feedback": "スタッフへのフィードバック（良かった点・改善点を具体的に）",\n';
+  systemPrompt += '  "feedback": "このターンの内部メモ（良かった点・改善点を記録、最後の総評に活用）",\n';
   systemPrompt += '  "advance_phase": true または false（次のフェーズに進むべきかどうか）,\n';
   systemPrompt += '  "is_finished": true または false（ロープレを終了すべきかどうか）,\n';
-  systemPrompt += '  "finish_summary": "終了時の総評（is_finishedがtrueの場合のみ）"\n';
+  systemPrompt += '  "finish_summary": "ロープレ全体の総評。①全体評価 ②良かった点（具体的に） ③改善点（具体的に） ④今後のアドバイス の4つの項目で200〜300文字でまとめる（is_finishedがtrueの場合のみ）"\n';
   systemPrompt += '}\n\n';
 
   systemPrompt += '## お客様役のルール\n';
@@ -2276,11 +2277,11 @@ async function rpSend() {
   systemPrompt += '- スタッフの返答が良ければ少し心が開く、悪ければ不信感を示す\n';
   systemPrompt += '- 1〜3文程度の自然な口語で話す\n\n';
 
-  systemPrompt += '## フィードバックのルール\n';
-  systemPrompt += '- スタッフの返答の良かった点を必ず1つ以上挙げる\n';
+  systemPrompt += '## フィードバック（内部メモ）のルール\n';
+  systemPrompt += '- このターンのスタッフ返答の良かった点を記録しておく\n';
   systemPrompt += '- 改善できる点があれば具体的に指摘する\n';
   systemPrompt += '- 切り返しトークの視点（共感・根拠提示・次のアクション提案）で評価する\n';
-  systemPrompt += '- 100文字以内で簡潔に\n\n';
+  systemPrompt += '- 50文字以内のメモ形式でOK（finish_summaryで詳しく総評する）\n\n';
 
   systemPrompt += '## フェーズ進行のルール\n';
   systemPrompt += '- スタッフの返答がフェーズの目的を達成したら advance_phase: true\n';
@@ -2329,12 +2330,7 @@ async function rpSend() {
       _rpHistory.push({ role: 'model', parts: [{ text: parsed.customer_reply }] });
     }
 
-    // フィードバック表示
-    var fbEl = document.getElementById('rp-feedback');
-    if (parsed.feedback && fbEl) {
-      fbEl.innerHTML = '<strong>📝 フィードバック：</strong>' + parsed.feedback;
-      fbEl.style.display = 'block';
-    }
+    // フィードバックは最後の総評でまとめて表示（毎ターンは非表示）
 
     // 終了処理
     if (parsed.is_finished) {
@@ -6756,60 +6752,72 @@ function rpFixMicText(text) {
 function rpToggleMic() {
   if (_rpMicActive) {
     rpStopMic();
-    return;
+  } else {
+    rpStartMic();
   }
-  // iOS Safari以外は非対応
-  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  var isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-  if (isIOS && !isSafari) {
-    alert('音声入力はiOSのSafariのみ対応しています。\nSafariで開き直してください。');
-    return;
-  }
-  rpStartMic();
 }
 
 function rpStartMic() {
   var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    alert('お使いのブラウザは音声入力に対応していません。');
+    alert('お使いのブラウザは音声入力に対応していません。\nChromeをお試しください。');
     return;
   }
 
-  _rpMicActive = true;
-  var btn = document.getElementById('rp-mic-btn');
-  var status = document.getElementById('rp-mic-status');
-  if (btn) { btn.style.background = '#FDECEA'; btn.style.borderColor = 'var(--rd)'; btn.textContent = '⏹'; }
-  if (status) { status.textContent = '🎤 話してください'; status.style.display = 'block'; }
+  _rpRecognition = new SpeechRecognition();
+  _rpRecognition.lang = 'ja-JP';
+  _rpRecognition.continuous = true;       // 話し続けても認識継続
+  _rpRecognition.interimResults = true;   // 途中結果も表示
+  _rpRecognition.maxAlternatives = 1;
 
-  function startOnce() {
-    if (!_rpMicActive) return;
-    var sr = new SpeechRecognition();
-    sr.lang = 'ja-JP';
-    sr.continuous = false;
-    sr.interimResults = false;
-    _rpRecognition = sr;
+  var inputEl = document.getElementById('rp-input');
+  var baseText = inputEl.value; // 既存テキストを保持
 
-    sr.onresult = function(e) {
-      var text = rpFixMicText(e.results[0][0].transcript);
-      var inp = document.getElementById('rp-input');
-      if (inp) inp.value += text;
-    };
+  _rpRecognition.onstart = function() {
+    _rpMicActive = true;
+    var btn = document.getElementById('rp-mic-btn');
+    var status = document.getElementById('rp-mic-status');
+    if (btn) { btn.style.background = '#FDECEA'; btn.style.borderColor = 'var(--rd)'; btn.textContent = '⏹'; }
+    if (status) status.style.display = 'block';
+  };
 
-    sr.onerror = function(e) {
-      if (e.error === 'not-allowed') {
-        alert('マイクの使用が許可されていません。');
-        rpStopMic();
+  _rpRecognition.onresult = function(e) {
+    var interim = '';
+    var final = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      var t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        final += rpFixMicText(t);
+      } else {
+        interim += t;
       }
-    };
+    }
+    if (final) baseText += final;
+    // 確定テキスト＋途中テキストを表示
+    inputEl.value = baseText + interim;
+    inputEl.scrollTop = inputEl.scrollHeight;
+  };
 
-    sr.onend = function() {
-      if (_rpMicActive) setTimeout(startOnce, 300);
-    };
+  _rpRecognition.onerror = function(e) {
+    if (e.error === 'no-speech') return; // 無音は無視
+    if (e.error === 'not-allowed') {
+      alert('マイクの使用が許可されていません。\nブラウザの設定でマイクを許可してください。');
+    }
+    rpStopMic();
+  };
 
-    try { sr.start(); } catch(e) {}
+  _rpRecognition.onend = function() {
+    // continuous=trueでも接続が切れた場合、アクティブなら再接続
+    if (_rpMicActive) {
+      try { _rpRecognition.start(); } catch(e) {}
+    }
+  };
+
+  try {
+    _rpRecognition.start();
+  } catch(e) {
+    alert('音声認識の開始に失敗しました: ' + e.message);
   }
-
-  startOnce();
 }
 
 function rpStopMic() {
@@ -6822,6 +6830,59 @@ function rpStopMic() {
   var status = document.getElementById('rp-mic-status');
   if (btn) { btn.style.background = '#fff'; btn.style.borderColor = 'var(--bd)'; btn.textContent = '🎤'; }
   if (status) status.style.display = 'none';
+  // 停止後に入力があれば自動送信
+  var inputEl = document.getElementById('rp-input');
+  if (inputEl && inputEl.value.trim()) {
+    setTimeout(function() { rpSend(); }, 200);
+  }
+}
+
+// ユーザーが手動で終了するボタン
+async function rpForceFinish() {
+  if (_rpIsFinished) return;
+  var sc = _rpCurrentScenario;
+  if (!sc) return;
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  if (!key) { alert('APIキーを設定してください'); return; }
+
+  // 入力エリアを非表示
+  _rpIsFinished = true;
+  _rpCurrentPhaseIdx = sc.phases.length;
+  renderRpPhaseBar();
+  document.getElementById('rp-input-area').style.display = 'none';
+  rpStopMic();
+
+  // チャットに終了メッセージ
+  rpAddBubble('system', '（ロープレを終了しました。総評を生成中…）');
+
+  // 総評をAIに生成させる
+  var finishPrompt = 'このロープレ全体を振り返って、以下の4項目で総評をしてください。\n①全体評価（一言で）\n②良かった点（具体的に）\n③改善点（具体的に）\n④今後のアドバイス\n200〜300文字でまとめてください。JSON形式ではなくテキストで返してください。';
+
+  try {
+    var res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: 'あなたは買取専門店のトレーニングコーチです。' }] },
+          contents: _rpHistory.concat([{ role: 'user', parts: [{ text: finishPrompt }] }]),
+          generationConfig: { maxOutputTokens: 600, temperature: 0.7 }
+        })
+      }
+    );
+    var data = await res.json();
+    var summary = data.candidates?.[0]?.content?.parts?.[0]?.text || '総評を取得できませんでした。';
+    var summaryEl = document.getElementById('rp-summary');
+    if (summaryEl) summaryEl.textContent = summary;
+  } catch(e) {
+    var summaryEl = document.getElementById('rp-summary');
+    if (summaryEl) summaryEl.textContent = '総評の生成に失敗しました: ' + e.message;
+  }
+
+  var finishedEl = document.getElementById('rp-finished');
+  if (finishedEl) finishedEl.style.display = 'block';
+  rpCalcScore(sc);
 }
 
 // ロープレ終了・リスタート時にマイクも止める
