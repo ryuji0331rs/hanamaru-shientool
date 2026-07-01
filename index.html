@@ -6792,6 +6792,8 @@ function rpStartMic() {
     sr.onresult = function(e) {
       var interim = '';
       var final = '';
+      // baseTextを毎回inputElから取得（送信後リセット対応）
+      baseText = inputEl.value.replace(latestInterim, '');
       for (var i = 0; i < e.results.length; i++) {
         var t = e.results[i][0].transcript;
         if (e.results[i].isFinal) {
@@ -6820,9 +6822,12 @@ function rpStartMic() {
     sr.onend = function() {
       // 確定していない途中テキストを確定させる
       if (latestInterim) {
-        baseText += rpFixMicText(latestInterim);
+        baseText = inputEl.value.replace(latestInterim, '') + rpFixMicText(latestInterim);
         latestInterim = '';
         inputEl.value = baseText;
+      } else {
+        // inputの現在値をbaseTextに同期
+        baseText = inputEl.value;
       }
       // アクティブなら再起動
       if (_rpMicActive) {
