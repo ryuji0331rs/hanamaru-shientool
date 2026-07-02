@@ -3859,6 +3859,75 @@ function rpExpandKeywords(kw) {
   return expanded;
 }
 
+
+// カテゴリ別グループ表示
+function rpRenderGrouped(scenarios) {
+  // タイトルからカテゴリ名を抽出（例：「🥇 貴金属①...」→「貴金属」）
+  function getCategory(s) {
+    // summaryやtitleからカテゴリを推定
+    var t = s.title || '';
+    var cats = ['貴金属','ブランド','時計','カメラ','ダイヤ','お酒','楽器','オーディオ','ホビー','ミシン','記念硬貨','切手','骨董','贈答品','喫煙具','メッキ','健康器具','医療機器','価格交渉','全般'];
+    for (var i = 0; i < cats.length; i++) {
+      if (t.indexOf(cats[i]) >= 0) return cats[i];
+    }
+    // summaryからも探す
+    var sm = s.summary || '';
+    for (var j = 0; j < cats.length; j++) {
+      if (sm.indexOf(cats[j]) >= 0) return cats[j];
+    }
+    return 'その他';
+  }
+
+  // カテゴリ別にグループ化
+  var groups = {};
+  var groupOrder = [];
+  scenarios.forEach(function(s) {
+    var cat = s.cat === '出張買取' ? '出張・' + getCategory(s) : getCategory(s);
+    if (!groups[cat]) { groups[cat] = []; groupOrder.push(cat); }
+    groups[cat].push(s);
+  });
+
+  var html = '';
+  groupOrder.forEach(function(cat) {
+    var items = groups[cat];
+    var groupId = 'rp-group-' + cat.replace(/[・\s]/g, '-');
+    html += '<div style="margin-bottom:12px;border:1px solid var(--bd);border-radius:12px;overflow:hidden;">';
+    // グループヘッダー（折りたたみ）
+    html += '<button data-gid="' + groupId + '" onclick="rpToggleGroup(this)" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#F4F6FB;border:none;cursor:pointer;font-size:14px;font-weight:700;color:var(--nv);">';
+    html += '<span>' + cat + '</span>';
+    html += '<span style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:var(--mu);font-weight:400;">' + items.length + '件</span><span class="rp-group-arrow">▼</span></span>';
+    html += '</button>';
+    // グループ内容
+    html += '<div id="' + groupId + '" style="display:none;">';
+    items.forEach(function(s) {
+      var diff = s.diff === 1 ? '初級' : s.diff === 2 ? '中級' : '上級';
+      var diffColor = s.diff === 1 ? '#1A7A4A' : s.diff === 2 ? '#E87000' : '#C0392B';
+      html += '<button class="rp-scenario-card" onclick="rpStartById(' + s.id + ')" style="border-radius:0;border-left:none;border-right:none;border-top:1px solid var(--bd);border-bottom:none;">';
+      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">';
+      html += '<div style="flex:1;">';
+      html += '<div class="rp-scenario-title">' + s.title + '</div>';
+      html += '<div class="rp-scenario-desc">' + (s.summary || '') + '</div>';
+      html += '<span style="font-size:11px;font-weight:700;color:' + diffColor + ';">' + diff + '</span>';
+      html += '</div>';
+      html += '<span style="background:var(--nv);color:#fff;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0;align-self:center;">開始</span>';
+      html += '</div>';
+      html += '</button>';
+    });
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function rpToggleGroup(btn) {
+  var id = btn.getAttribute('data-gid');
+  var el = document.getElementById(id);
+  if (!el) return;
+  var isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  var arrow = btn.querySelector('.rp-group-arrow');
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+}
+
 function renderRpScenarios() {
   var el = document.getElementById('rp-scenario-list');
   if (!el) return;
@@ -3887,22 +3956,7 @@ function renderRpScenarios() {
   if (filtered.length === 0) {
     html = '<div style="text-align:center;padding:32px 0;color:var(--mu);font-size:14px;">該当するシナリオがありません<br><span style="font-size:12px;">別のキーワードで試してください</span></div>';
   } else {
-    var show = filtered.slice(0, 30);
-    show.forEach(function(s) {
-      var typeTag = s.cat === '店頭買取'
-        ? '<span class="rp-tag rp-tag-store">\u{1F3EA} 店頭</span>'
-        : '<span class="rp-tag rp-tag-visit">\u{1F3E0} 出張</span>';
-      var diff = s.diff === 1 ? '初級' : s.diff === 2 ? '中級' : '上級';
-      var diffCls = s.diff === 1 ? 'rp-tag-store' : s.diff === 2 ? 'rp-tag-visit' : 'rp-tag-diff';
-      html += '<button class="rp-scenario-card" onclick="rpStartById(' + s.id + ')">';
-      html += '<div class="rp-scenario-title">' + s.title + '</div>';
-      html += '<div class="rp-scenario-desc">' + (s.summary || '') + '</div>';
-      html += typeTag + '<span class="rp-tag ' + diffCls + '">' + diff + '</span>';
-      html += '</button>';
-    });
-    if (filtered.length > 30) {
-      html += '<div style="text-align:center;padding:12px;font-size:13px;color:var(--mu);">他 ' + (filtered.length - 30) + ' 件 → キーワードを絞り込んでください</div>';
-    }
+    html = rpRenderGrouped(filtered);
   }
   el.innerHTML = html;
 }
@@ -8540,22 +8594,7 @@ function rpAiSearch() {
     return score(b) - score(a);
   });
   var html2 = '<div style="font-size:13px;font-weight:700;color:var(--nv);margin-bottom:10px;">✨ ' + filtered.length + '件のシナリオが見つかりました</div>';
-  filtered.forEach(function(s) {
-    var typeLabel = s.cat === '店頭買取' ? '🏪 店頭' : '🏠 出張';
-    var diff = s.diff === 1 ? '初級' : s.diff === 2 ? '中級' : '上級';
-    var diffColor = s.diff === 1 ? '#1A7A4A' : s.diff === 2 ? '#E87000' : '#C0392B';
-    html2 += '<button onclick="rpStartById(' + s.id + ')" style="width:100%;text-align:left;background:#fff;border:1.5px solid var(--nv);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;display:block;" ' +
-      'onmouseover="this.style.background=\'#EEF2FF\'" onmouseout="this.style.background=\'#fff\'">' +
-      '<div style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between;">' +
-        '<div style="flex:1;">' +
-          '<div style="font-size:14px;font-weight:700;color:#333;margin-bottom:4px;">' + s.title + '</div>' +
-          '<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">' + typeLabel + ' · <span style="color:' + diffColor + ';font-weight:600;">' + diff + '</span></div>' +
-          '<div style="font-size:12px;color:#666;">' + (s.summary || '') + '</div>' +
-        '</div>' +
-        '<span style="background:var(--nv);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0;align-self:center;">開始</span>' +
-      '</div>' +
-    '</button>';
-  });
+  html2 += rpRenderGrouped(filtered);
   resultEl.innerHTML = html2;
 }
 
