@@ -1504,6 +1504,13 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     <!-- 会話エリア -->
     <div id="rp-messages" style="background:var(--bg2);border-radius:12px;padding:14px;min-height:160px;margin-bottom:14px;max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div>
 
+    <!-- 音声トグル -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+      <button id="rp-tts-btn" onclick="rpToggleTTS()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;background:#fff;border:1.5px solid var(--bd);border-radius:20px;font-size:13px;color:var(--mu);cursor:pointer;">
+        🔇 読み上げ OFF
+      </button>
+    </div>
+
     <!-- フィードバック -->
     <div id="rp-feedback" style="display:none;background:#E1F5EE;border-left:4px solid #1D9E75;border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:14px;font-size:14px;color:#085041;line-height:1.7;"></div>
 
@@ -3902,9 +3909,15 @@ function rpAddBubble(role, text) {
   var label = role === 'customer' ? '👤 お客様' : '👔 あなた';
   var wrap = document.createElement('div');
   wrap.className = wrapCls;
-  wrap.innerHTML = '<div class="rp-bubble-label">' + label + '</div><div class="' + bubbleCls + '">' + text.replace(/\n/g, '<br>') + '</div>';
+  var bubbleEl = document.createElement('div');
+  bubbleEl.className = bubbleCls;
+  bubbleEl.innerHTML = text.replace(/\n/g, '<br>');
+  wrap.innerHTML = '<div class="rp-bubble-label">' + label + '</div>';
+  wrap.appendChild(bubbleEl);
   msgs.appendChild(wrap);
   msgs.scrollTop = msgs.scrollHeight;
+  // お客様の返答はTTSで読み上げ
+  if (role === 'customer') rpSpeak(text, bubbleEl);
 }
 
 async function rpSend() {
@@ -4253,6 +4266,7 @@ function rpLinkToTalk(keyword) {
 }
 
 function rpRestart() {
+  rpStopTTS();
   if (_rpCurrentScenario) rpStart(_rpCurrentScenario.id);
 }
 
@@ -4265,6 +4279,7 @@ function rpBackBtn() {
 }
 
 function rpBackToSelect() {
+  rpStopTTS();
   document.getElementById('rp-scenario-select').style.display = 'block';
   document.getElementById('rp-main').style.display = 'none';
   var btn = document.getElementById('rp-back-btn');
@@ -8597,6 +8612,73 @@ function rpStopMic() {
   if (btn) { btn.style.background = '#fff'; btn.style.borderColor = 'var(--bd)'; btn.textContent = '🎤'; }
   if (status) status.style.display = 'none';
 }
+
+var _rpTTSEnabled = false;
+var _rpTTSSpeaking = false;
+
+function rpToggleTTS() {
+  _rpTTSEnabled = !_rpTTSEnabled;
+  var btn = document.getElementById('rp-tts-btn');
+  if (btn) {
+    btn.textContent = _rpTTSEnabled ? '🔊 読み上げ ON' : '🔇 読み上げ OFF';
+    btn.style.background = _rpTTSEnabled ? '#E6F9EF' : '#fff';
+    btn.style.borderColor = _rpTTSEnabled ? 'var(--gr)' : 'var(--bd)';
+    btn.style.color = _rpTTSEnabled ? 'var(--gr)' : 'var(--mu)';
+  }
+  if (!_rpTTSEnabled && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+function rpSpeak(text, bubble) {
+  if (!_rpTTSEnabled) return;
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  var utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP';
+  utter.rate = 1.0;
+  utter.pitch = 1.0;
+
+  // 声を選択（日本語女性優先）
+  var voices = window.speechSynthesis.getVoices();
+  var jaVoice = voices.find(function(v) {
+    return v.lang === 'ja-JP' && v.name.includes('Female');
+  }) || voices.find(function(v) {
+    return v.lang === 'ja-JP';
+  });
+  if (jaVoice) utter.voice = jaVoice;
+
+  utter.onstart = function() {
+    _rpTTSSpeaking = true;
+    if (bubble) bubble.style.borderColor = 'var(--gr)';
+  };
+  utter.onend = function() {
+    _rpTTSSpeaking = false;
+    if (bubble) bubble.style.borderColor = 'var(--bd)';
+  };
+  utter.onerror = function() {
+    _rpTTSSpeaking = false;
+    if (bubble) bubble.style.borderColor = 'var(--bd)';
+  };
+
+  // iOSは遅延して取得するため少し待つ
+  setTimeout(function() {
+    var voices2 = window.speechSynthesis.getVoices();
+    var jaVoice2 = voices2.find(function(v) {
+      return v.lang === 'ja-JP';
+    });
+    if (jaVoice2) utter.voice = jaVoice2;
+    window.speechSynthesis.speak(utter);
+  }, 100);
+}
+
+// ロープレ終了時にTTSを停止
+function rpStopTTS() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  _rpTTSSpeaking = false;
+}
+
 
 // ロープレ終了・リスタート時にマイクも止める
 var _origRpRestart = rpRestart;
