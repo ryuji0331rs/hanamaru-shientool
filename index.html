@@ -8509,6 +8509,8 @@ function rpCheckAdminAccess() {
 // ===== 音声入力（Web Speech API）=====
 var _rpRecognition = null;
 var _rpMicActive = false;
+var _rpMediaRecorder = null;
+var _rpAudioChunks = [];
 
 // 買取専門用語の補正辞書
 var _rpMicDict = [
@@ -8539,95 +8541,119 @@ function rpToggleMic() {
 }
 
 function rpStartMic() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert('お使いのブラウザは音声入力に対応していません。');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('お使いのブラウザはマイク録音に対応していません。');
     return;
   }
 
+  var btn = document.getElementById('rp-mic-btn');
+  var status = document.getElementById('rp-mic-status');
+
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    _rpMicActive = true;
+
+    // MIMEタイプ：Safari対応
+    var mimeType = 'audio/webm';
+    if (!MediaRecorder.isTypeSupported('audio/webm')) {
+      mimeType = 'audio/mp4'; // Safari
+    }
+
+    _rpMediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+    _rpAudioChunks = [];
+
+    _rpMediaRecorder.ondataavailable = function(e) {
+      if (e.data.size > 0) _rpAudioChunks.push(e.data);
+    };
+
+    _rpMediaRecorder.onstop = function() {
+      // ストリーム停止
+      stream.getTracks().forEach(function(t) { t.stop(); });
+
+      if (!_rpMicActive) return; // キャンセル時
+      var blob = new Blob(_rpAudioChunks, { type: mimeType });
+      rpTranscribeWithGemini(blob, mimeType);
+    };
+
+    _rpMediaRecorder.start();
+
+    // UI更新
+    if (btn) { btn.style.background = '#FDECEA'; btn.style.borderColor = 'var(--rd)'; btn.textContent = '⏹'; }
+    if (status) status.style.display = 'block';
+
+  }).catch(function(err) {
+    alert('マイクの使用が許可されていません。\nブラウザの設定でマイクを許可してください。');
+  });
+}
+
+async function rpTranscribeWithGemini(blob, mimeType) {
   var inputEl = document.getElementById('rp-input');
-  var _baseText = inputEl ? inputEl.value : '';
+  var btn = document.getElementById('rp-mic-btn');
+  var status = document.getElementById('rp-mic-status');
 
-  function updateUI(active) {
-    var btn = document.getElementById('rp-mic-btn');
-    var status = document.getElementById('rp-mic-status');
-    if (btn) {
-      btn.style.background = active ? '#FDECEA' : '#fff';
-      btn.style.borderColor = active ? 'var(--rd)' : 'var(--bd)';
-      btn.textContent = active ? '⏹' : '🎤';
-    }
-    if (status) status.style.display = active ? 'block' : 'none';
+  // 変換中UI
+  if (btn) { btn.textContent = '⏳'; btn.style.background = '#FFF8E1'; btn.style.borderColor = '#F5A623'; }
+  if (status) { status.textContent = '⏳ 音声を認識中…'; status.style.display = 'block'; }
+
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  if (!key) {
+    if (status) status.style.display = 'none';
+    if (btn) { btn.style.background = '#fff'; btn.style.borderColor = 'var(--bd)'; btn.textContent = '🎤'; }
+    return;
   }
 
-  function startSession() {
-    if (!_rpMicActive) return;
-    var rec = new SpeechRecognition();
-    _rpRecognition = rec;
-    rec.lang = 'ja-JP';
-    rec.continuous = false;      // Safariは false が安定
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
+  try {
+    // Base64変換
+    var reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onload = async function() {
+      var base64 = reader.result.split(',')[1];
+      var apiMime = mimeType === 'audio/mp4' ? 'audio/mp4' : 'audio/webm';
 
-    rec.onstart = function() {
-      updateUI(true);
-    };
-
-    rec.onresult = function(e) {
-      var interim = '';
-      var final = '';
-      for (var i = e.resultIndex; i < e.results.length; i++) {
-        var t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) {
-          final += rpFixMicText(t);
-        } else {
-          interim += t;
+      var res = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: apiMime, data: base64 } },
+                { text: '以下の音声を正確に日本語で文字起こししてください。買取店スタッフの発言です。文字起こし結果のみを返してください。前置きや説明は不要です。' }
+              ]
+            }]
+          })
         }
-      }
-      if (final) _baseText += final;
-      if (inputEl) {
-        inputEl.value = _baseText + interim;
+      );
+      var data = await res.json();
+      var text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
+                  data.candidates[0].content.parts && data.candidates[0].content.parts[0].text) || '';
+      text = text.trim();
+
+      if (inputEl && text) {
+        inputEl.value = (inputEl.value ? inputEl.value + ' ' : '') + rpFixMicText(text);
         inputEl.scrollTop = inputEl.scrollHeight;
+        inputEl.focus();
       }
-    };
 
-    rec.onerror = function(e) {
-      if (e.error === 'not-allowed') {
-        alert('マイクの使用が許可されていません。\nブラウザの設定でマイクを許可してください。');
-        _rpMicActive = false;
-        updateUI(false);
-        return;
-      }
-      // no-speech等はそのまま再起動
-      if (_rpMicActive) setTimeout(startSession, 200);
+      // UI戻す
+      if (btn) { btn.style.background = '#fff'; btn.style.borderColor = 'var(--bd)'; btn.textContent = '🎤'; }
+      if (status) status.style.display = 'none';
     };
-
-    rec.onend = function() {
-      // Safariで自動停止→アクティブなら即再起動
-      if (_rpMicActive) setTimeout(startSession, 150);
-    };
-
-    try {
-      rec.start();
-    } catch(e) {
-      if (_rpMicActive) setTimeout(startSession, 300);
-    }
+  } catch(e) {
+    if (btn) { btn.style.background = '#fff'; btn.style.borderColor = 'var(--bd)'; btn.textContent = '🎤'; }
+    if (status) status.style.display = 'none';
   }
-
-  _rpMicActive = true;
-  updateUI(true);
-  startSession();
 }
 
 function rpStopMic() {
   _rpMicActive = false;
-  if (_rpRecognition) {
-    try { _rpRecognition.stop(); } catch(e) {}
-    _rpRecognition = null;
+  if (_rpMediaRecorder && _rpMediaRecorder.state === 'recording') {
+    try { _rpMediaRecorder.stop(); } catch(e) {}
   }
-  var btn = document.getElementById('rp-mic-btn');
+  _rpMediaRecorder = null;
+  // UIは rpTranscribeWithGemini 完了後に戻る
   var status = document.getElementById('rp-mic-status');
-  if (btn) { btn.style.background = '#fff'; btn.style.borderColor = 'var(--bd)'; btn.textContent = '🎤'; }
-  if (status) status.style.display = 'none';
+  if (status) status.textContent = '⏳ 音声を認識中…（もう一度押すと停止）';
 }
 
 var _rpTTSEnabled = false;
