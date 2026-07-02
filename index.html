@@ -4379,10 +4379,13 @@ function _buildWelcomeHtml(mode) {
   var suggests = (cfg.suggests || []).map(function(s) {
     return '<button class="chat-suggest" onclick="sendSuggestion(this)">' + s + '</button>';
   }).join('');
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  var keyHtml = key ? '' :
+    '<div style="font-size:13px;color:var(--gr);background:var(--gr-bg);border:1px solid #A8D5B8;border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.7;">💡 <strong>Gemini APIキー（無料）が必要です</strong><br><a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--gr);font-weight:600;">aistudio.google.com/apikey</a> で取得 → 送信ボタンを押すと入力できます</div>';
   return '<div style="font-size:40px;margin-bottom:12px;">🤖</div>' +
     '<div style="font-size:17px;font-weight:700;color:var(--nv);margin-bottom:8px;">華丸 AIアシスタント</div>' +
     '<div style="font-size:14px;line-height:1.8;margin-bottom:16px;">ロープレ・マニュアル・金券価格表の<br>知識をもとに質問に答えます。</div>' +
-    '<div style="font-size:13px;color:var(--gr);background:var(--gr-bg);border:1px solid #A8D5B8;border-radius:8px;padding:10px 14px;margin-bottom:16px;line-height:1.7;">💡 <strong>Gemini APIキー（無料）が必要です</strong><br><a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--gr);font-weight:600;">aistudio.google.com/apikey</a> で取得 → 送信ボタンを押すと入力できます</div>' +
+    keyHtml +
     '<div class="suggest-area" style="display:flex;flex-direction:column;gap:8px;max-width:400px;margin:0 auto;">' + suggests + '</div>';
 }
 
