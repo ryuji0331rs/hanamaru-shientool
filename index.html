@@ -346,13 +346,9 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
       </div>
     </div>
     <div style="position:relative;margin-top:24px;">
-      <div style="background:#fff;border-radius:14px;box-shadow:0 2px 16px rgba(27,58,107,.1);display:flex;align-items:center;padding:6px 8px 6px 18px;gap:8px;">
-        <input id="home-ai-input" type="text" placeholder="例）盗品が来たらどうすればいい？　K18の計算方法は？　クレームへの対応は？" style="flex:1;border:none;outline:none;font-size:15px;color:#042C53;background:transparent;padding:10px 0;" onkeydown="if(event.key==='Enter'){homeAiSend();}">
-        <button onclick="homeAiSend()" style="width:44px;height:44px;background:#185FA5;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M18 10L2 3L6 10L2 17L18 10Z" fill="#fff"/></svg>
-        </button>
-        <button onclick="GP('chat')" style="height:44px;padding:0 16px;background:#E8F0FE;color:#185FA5;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0;">チャットを開く →</button>
-      </div>
+      <button onclick="GP('chat')" style="width:100%;padding:16px;background:#185FA5;color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 2px 16px rgba(27,58,107,.2);">
+        🤖 AIアシスタントを開く →
+      </button>
     </div>
 
   </div>
