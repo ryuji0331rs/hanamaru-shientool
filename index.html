@@ -1520,16 +1520,14 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
     <!-- 終了後のアクション -->
     <div id="rp-finished" style="display:none;margin-top:16px;">
-      <div style="background:#E6F1FB;border-radius:12px;padding:16px 18px;margin-bottom:14px;">
-        <div style="font-size:15px;font-weight:700;color:#0C447C;margin-bottom:8px;">🎉 ロープレ完了！</div>
-        <div id="rp-summary" style="font-size:14px;color:#185FA5;line-height:1.7;"></div>
+      <div style="background:linear-gradient(135deg,#E6F1FB,#C8DEF5);border-radius:12px;padding:16px 18px;margin-bottom:14px;border:1px solid #A8C8EE;">
+        <div style="font-size:15px;font-weight:700;color:#0C447C;margin-bottom:6px;">🎉 ロープレ完了！</div>
+        <div id="rp-summary" style="font-size:13px;color:#185FA5;line-height:1.7;"></div>
+        <div style="font-size:12px;color:#185FA5;opacity:.7;margin-top:6px;">⬇️ 下のスコアカードで詳細を確認してください</div>
       </div>
       <!-- スコアカード -->
       <div id="rp-score-card" style="display:none;"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
-        <button onclick="rpRestart()" style="background:var(--nv);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;font-weight:600;">同じシナリオで再挑戦</button>
-        <button onclick="rpBackToSelect()" style="background:#fff;color:var(--mu);border:1.5px solid var(--bd);border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;">別のシナリオを選ぶ</button>
-      </div>
+      
     </div>
   </div>
 </div>
@@ -3856,7 +3854,8 @@ function rpStart(scenarioId) {
   document.getElementById('rp-main').style.display = 'block';
   document.getElementById('rp-finished').style.display = 'none';
   document.getElementById('rp-input-area').style.display = 'block';
-  document.getElementById('rp-feedback').style.display = 'none';
+  var _fbEl = document.getElementById('rp-feedback');
+  if (_fbEl) _fbEl.style.display = 'none';
   document.getElementById('rp-messages').innerHTML = '';
   var scoreEl = document.getElementById('rp-score-card');
   if (scoreEl) { scoreEl.style.display = 'none'; scoreEl.innerHTML = ''; }
@@ -3939,32 +3938,23 @@ async function rpSend() {
   if (nextPhase) systemPrompt += '【次のフェーズ】' + nextPhase + '\n';
   systemPrompt += '【経過ターン数】' + turnCount + '\n\n';
 
-  systemPrompt += '## 出力フォーマット（必ずこの形式で返答）\n';
-  systemPrompt += '以下のJSON形式のみで返答してください。他のテキストは一切含めないでください。\n';
+  systemPrompt += '## 出力フォーマット（必ずJSON形式のみ・他のテキスト不可）\n';
   systemPrompt += '{\n';
-  systemPrompt += '  "customer_reply": "お客様としての次の台詞（自然な口語で）",\n';
-  systemPrompt += '  "feedback": "スタッフへのフィードバック（良かった点・改善点を具体的に）",\n';
-  systemPrompt += '  "advance_phase": true または false（次のフェーズに進むべきかどうか）,\n';
-  systemPrompt += '  "is_finished": true または false（ロープレを終了すべきかどうか）,\n';
-  systemPrompt += '  "finish_summary": "終了時の総評（is_finishedがtrueの場合のみ）"\n';
+  systemPrompt += '  "customer_reply": "お客様の次の台詞（自然な口語・1〜3文）",\n';
+  systemPrompt += '  "advance_phase": true/false（このフェーズの目的を達成したか）,\n';
+  systemPrompt += '  "is_finished": true/false（ロープレを終了すべきか）,\n';
+  systemPrompt += '  "finish_summary": "終了時の一言総評（is_finished=trueのみ）"\n';
   systemPrompt += '}\n\n';
 
   systemPrompt += '## お客様役のルール\n';
-  systemPrompt += '- お客様プロフィールに忠実に、感情・性格を維持して演じる\n';
-  systemPrompt += '- 現在のフェーズに応じた自然な反応をする\n';
-  systemPrompt += '- スタッフの返答が良ければ少し心が開く、悪ければ不信感を示す\n';
-  systemPrompt += '- 1〜3文程度の自然な口語で話す\n\n';
-
-  systemPrompt += '## フィードバックのルール\n';
-  systemPrompt += '- スタッフの返答の良かった点を必ず1つ以上挙げる\n';
-  systemPrompt += '- 改善できる点があれば具体的に指摘する\n';
-  systemPrompt += '- 切り返しトークの視点（共感・根拠提示・次のアクション提案）で評価する\n';
-  systemPrompt += '- 100文字以内で簡潔に\n\n';
+  systemPrompt += '- お客様プロフィールの性格・感情に忠実に演じる\n';
+  systemPrompt += '- スタッフの返答が的確なら心が開き、不適切なら不信感を示す\n';
+  systemPrompt += '- 現在のフェーズに沿った自然な会話をする\n\n';
 
   systemPrompt += '## フェーズ進行のルール\n';
-  systemPrompt += '- スタッフの返答がフェーズの目的を達成したら advance_phase: true\n';
-  systemPrompt += '- 最終フェーズで自然な終了になったら is_finished: true\n';
-  systemPrompt += '- 経過ターン数が8を超えたら強制的に終了方向へ誘導する\n';
+  systemPrompt += '- スタッフがフェーズの目的を達成したら advance_phase: true\n';
+  systemPrompt += '- 最終フェーズで自然な着地（成約・見送り）になったら is_finished: true\n';
+  systemPrompt += '- ターン数が10を超えたら終了方向へ誘導する\n';
 
   try {
     var res = await fetch(
@@ -4006,13 +3996,6 @@ async function rpSend() {
     if (parsed.customer_reply) {
       rpAddBubble('customer', parsed.customer_reply);
       _rpHistory.push({ role: 'model', parts: [{ text: parsed.customer_reply }] });
-    }
-
-    // フィードバック表示
-    var fbEl = document.getElementById('rp-feedback');
-    if (parsed.feedback && fbEl) {
-      fbEl.innerHTML = '<strong>📝 フィードバック：</strong>' + parsed.feedback;
-      fbEl.style.display = 'block';
     }
 
     // 終了処理
@@ -4198,23 +4181,55 @@ function rpShowScore(score, sc) {
     '</div>';
   }
 
+  // ランク判定
+  function getRank(total) {
+    if (total >= 90) return { rank: 'S', label: '完璧！', color: '#B8860B', bg: 'linear-gradient(135deg,#FFF9E6,#FFF3C0)', border: '#F0C040' };
+    if (total >= 80) return { rank: 'A', label: '優秀', color: '#1A7A4A', bg: 'linear-gradient(135deg,#E6F9EF,#C8F0DB)', border: '#1D9E75' };
+    if (total >= 70) return { rank: 'B', label: '合格', color: '#185FA5', bg: 'linear-gradient(135deg,#E6F1FB,#C8DEF5)', border: '#3B82C4' };
+    if (total >= 60) return { rank: 'C', label: 'もう一息', color: '#E87000', bg: 'linear-gradient(135deg,#FFF4E5,#FFE4B8)', border: '#F5A623' };
+    return { rank: 'D', label: '要練習', color: '#C0392B', bg: 'linear-gradient(135deg,#FDECEA,#F8C8C5)', border: '#E74C3C' };
+  }
+  var rnk = getRank(score.total);
+
   scoreEl.innerHTML =
-    '<div style="border:2px solid ' + totalColor + ';border-radius:12px;padding:16px 18px;margin-top:16px;background:' + totalBg + ';">' +
-      // 合計スコア
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
-        '<div style="font-size:15px;font-weight:700;color:' + totalColor + ';">📊 採点結果</div>' +
-        '<div style="font-size:32px;font-weight:900;color:' + totalColor + ';">' + score.total + '<span style="font-size:14px;">点</span></div>' +
+    '<div style="border:2px solid ' + rnk.border + ';border-radius:16px;overflow:hidden;margin-top:16px;">' +
+      // ヘッダー（グラデーション）
+      '<div style="background:' + rnk.bg + ';padding:20px 18px;text-align:center;border-bottom:1px solid ' + rnk.border + ';">' +
+        '<div style="font-size:12px;font-weight:700;color:' + rnk.color + ';letter-spacing:2px;margin-bottom:4px;">📊 ロープレ採点結果</div>' +
+        '<div style="display:flex;align-items:center;justify-content:center;gap:16px;">' +
+          '<div style="width:72px;height:72px;border-radius:50%;border:3px solid ' + rnk.border + ';background:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;">' +
+            '<span style="font-size:26px;font-weight:900;color:' + rnk.color + ';line-height:1;">' + score.total + '</span>' +
+            '<span style="font-size:10px;color:' + rnk.color + ';">/ 100</span>' +
+          '</div>' +
+          '<div style="text-align:left;">' +
+            '<div style="font-size:36px;font-weight:900;color:' + rnk.color + ';line-height:1;">ランク ' + rnk.rank + '</div>' +
+            '<div style="font-size:14px;color:' + rnk.color + ';opacity:.8;">' + rnk.label + '</div>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      // 4軸
-      axesHtml +
+      // 4軸スコア
+      '<div style="padding:16px 18px;background:#fff;">' +
+        axesHtml +
+      '</div>' +
       // 良かった点
-      (goodHtml ? '<div style="margin-top:12px;"><div style="font-size:13px;font-weight:700;color:#1A7A4A;margin-bottom:6px;">👍 良かった点</div><ul style="margin:0;padding-left:0;list-style:none;">' + goodHtml + '</ul></div>' : '') +
+      (goodHtml ? '<div style="padding:12px 18px;background:#F4FBF7;border-top:1px solid #D1EDDF;">' +
+        '<div style="font-size:13px;font-weight:700;color:#1A7A4A;margin-bottom:8px;">👍 良かった点</div>' +
+        '<ul style="margin:0;padding-left:0;list-style:none;">' + goodHtml + '</ul>' +
+      '</div>' : '') +
       // NGワード
-      ngHtml +
+      (ngHtml ? '<div style="padding:12px 18px;border-top:1px solid #F5C6C2;">' + ngHtml + '</div>' : '') +
       // 改善点
-      (score.improvement ? '<div style="margin-top:12px;background:#FFF8E1;border-radius:6px;padding:10px;font-size:13px;color:#7A5000;"><strong>💡 次回への改善点：</strong>' + score.improvement + '</div>' : '') +
+      (score.improvement ? '<div style="padding:12px 18px;background:#FFFBF0;border-top:1px solid #FFE08A;">' +
+        '<div style="font-size:13px;font-weight:700;color:#7A5000;margin-bottom:4px;">💡 次回への改善点</div>' +
+        '<div style="font-size:13px;color:#5A3A00;line-height:1.7;">' + score.improvement + '</div>' +
+      '</div>' : '') +
       // 切り返しトーク集リンク
-      talkLinkHtml +
+      (talkLinkHtml ? '<div style="padding:12px 18px;border-top:1px solid #D0DCEF;background:#F0F4FF;">' + talkLinkHtml + '</div>' : '') +
+      // 再挑戦ボタン
+      '<div style="padding:14px 18px;background:#F8F9FA;border-top:1px solid #E0E0E0;display:flex;gap:10px;">' +
+        '<button onclick="rpRestart()" style="flex:1;background:var(--nv);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;">🔄 もう一度挑戦</button>' +
+        '<button onclick="rpBackToSelect()" style="flex:1;background:#fff;color:var(--nv);border:2px solid var(--nv);border-radius:8px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;">📋 別のシナリオへ</button>' +
+      '</div>' +
     '</div>';
 }
 
