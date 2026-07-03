@@ -6681,135 +6681,25 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ===== ロープレ：AIシナリオ検索 =====
-var _rpAiMicRecognition = null;
-var _rpAiMicActive = false;
+// ===== Gemini Audio 音声入力 =====
+// Web Speech APIの代わりにMediaRecorder + Gemini APIで音声→テキスト変換
+// iOS Safariを含む全ブラウザで安定動作
 
-function rpAiSearchMic() {
-  if (_rpAiMicActive) {
-    rpAiStopMic(); return;
-  }
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) { alert('ChromeブラウザでのみAI音声検索が使えます'); return; }
-  _rpAiMicRecognition = new SpeechRecognition();
-  _rpAiMicRecognition.lang = 'ja-JP';
-  _rpAiMicRecognition.continuous = false;
-  _rpAiMicRecognition.interimResults = false;
-  _rpAiMicRecognition.onstart = function() {
-    _rpAiMicActive = true;
-    var btn = document.getElementById('rp-ai-mic-btn');
-    var st = document.getElementById('rp-ai-mic-status');
-    if (btn) { btn.style.background='#FDECEA'; btn.style.borderColor='var(--rd)'; btn.textContent='⏹'; }
-    if (st) st.style.display='block';
-  };
-  _rpAiMicRecognition.onresult = function(e) {
-    var text = e.results[0][0].transcript;
-    var inp = document.getElementById('rp-ai-search-input');
-    if (inp) inp.value = text;
-    rpAiStopMic();
-    rpAiSearch();
-  };
-  _rpAiMicRecognition.onerror = function() { rpAiStopMic(); };
-  _rpAiMicRecognition.onend = function() { rpAiStopMic(); };
-  _rpAiMicRecognition.start();
-}
+var _geminiMicStream = null;
+var _geminiMicRecorder = null;
+var _geminiMicChunks = [];
+var _geminiMicActive = false;
+var _geminiMicTarget = null; // 'ai-search' or 'rp'
 
-function rpAiStopMic() {
-  _rpAiMicActive = false;
-  if (_rpAiMicRecognition) { try { _rpAiMicRecognition.stop(); } catch(e) {} _rpAiMicRecognition = null; }
-  var btn = document.getElementById('rp-ai-mic-btn');
-  var st = document.getElementById('rp-ai-mic-status');
-  if (btn) { btn.style.background='#fff'; btn.style.borderColor='var(--bd)'; btn.textContent='🎤'; }
-  if (st) st.style.display='none';
-}
-
-async function rpAiSearch() {
-  var query = (document.getElementById('rp-ai-search-input')?.value || '').trim();
-  if (!query) return;
-  var key = localStorage.getItem('hanamaru_gemini_key') || '';
-  if (!key) { alert('APIキーを設定してください（管理画面 > 設定）'); return; }
-
-  var resultEl = document.getElementById('rp-ai-search-result');
-  var btn = document.getElementById('rp-ai-search-btn');
-  resultEl.style.display = 'block';
-  resultEl.innerHTML = '<div style="color:var(--mu);font-size:14px;">🔍 シナリオを探しています...</div>';
-  if (btn) { btn.disabled = true; btn.textContent = '検索中…'; }
-
-  // シナリオ一覧をテキスト化（IDとタイトル・カテゴリ・タグのみ）
-  var scenarioList = _rpScenarios.map(function(s) {
-    return s.id + '|' + s.title + '|' + s.category + '|' + (s.tags||[]).join(',') + '|' + s.type;
-  }).join('\n');
-
-  var prompt = 'あなたは買取店スタッフ向けロープレシステムのシナリオ選択AIです。\n\n';
-  prompt += '【ユーザーのリクエスト】\n' + query + '\n\n';
-  prompt += '【シナリオ一覧（id|タイトル|カテゴリ|タグ|type）】\n' + scenarioList + '\n\n';
-  prompt += '上記リクエストに最も合うシナリオを3件まで選んでください。\n';
-  prompt += 'JSONのみで返答してください（前後のテキスト・コードブロック不要）:\n';
-  prompt += '{"matches":[{"id":"シナリオID","reason":"選んだ理由（20字以内）"}]}';
-
-  try {
-    var res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
-      { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ contents:[{role:'user',parts:[{text:prompt}]}], generationConfig:{temperature:0.2} }) }
-    );
-    var data = await res.json();
-    var raw = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g,'').trim();
-    var parsed = JSON.parse(raw);
-    var matches = parsed.matches || [];
-
-    if (matches.length === 0) {
-      resultEl.innerHTML = '<div style="color:var(--mu);font-size:14px;">該当するシナリオが見つかりませんでした。別のキーワードで試してください。</div>';
-    } else {
-      var html = '<div style="font-size:13px;font-weight:700;color:var(--nv);margin-bottom:10px;">✨ ' + matches.length + '件のシナリオが見つかりました</div>';
-      matches.forEach(function(m) {
-        var sc = _rpScenarios.find(function(s){return s.id===m.id;});
-        if (!sc) return;
-        var typeLabel = sc.type==='store'?'🏪 店頭':'🏠 出張';
-        var diffColor = sc.difficulty==='初級'?'#1A7A4A':sc.difficulty==='中級'?'#E87000':'#C0392B';
-        html += '<button onclick="rpStart(\''+sc.id+'\')" style="width:100%;text-align:left;background:#fff;border:1.5px solid var(--nv);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;display:block;" ' +
-          'onmouseover="this.style.background=\'#EEF2FF\'" onmouseout="this.style.background=\'#fff\'">' +
-          '<div style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between;">' +
-            '<div style="flex:1;">' +
-              '<div style="font-size:14px;font-weight:700;color:#333;margin-bottom:4px;">' + sc.title + '</div>' +
-              '<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">' + typeLabel + ' · ' + sc.category + ' · <span style="color:'+diffColor+';font-weight:600;">' + sc.difficulty + '</span></div>' +
-              '<div style="font-size:12px;color:#666;">' + (m.reason||'') + '</div>' +
-            '</div>' +
-            '<span style="background:var(--nv);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0;align-self:center;">開始</span>' +
-          '</div>' +
-        '</button>';
-      });
-      resultEl.innerHTML = html;
-    }
-  } catch(e) {
-    resultEl.innerHTML = '<div style="color:var(--rd);font-size:14px;">検索に失敗しました: ' + e.message + '</div>';
-  }
-  if (btn) { btn.disabled=false; btn.textContent='検索'; }
-}
-
-// 管理者判定＆シナリオ一覧表示制御
-function rpCheckAdminAccess() {
-  var isAdmin = _currentStaff && _currentStaff.role === 'admin';
-  // 管理画面パスワードでログイン済みの場合も管理者扱い
-  if (!isAdmin) isAdmin = !!localStorage.getItem('hanamaru_admin_logged');
-  var wrap = document.getElementById('rp-scenario-list-wrap');
-  if (wrap) wrap.style.display = isAdmin ? '' : 'none';
-}
-
-// ===== 音声入力（Web Speech API）=====
-var _rpRecognition = null;
-var _rpMicActive = false;
-
-// 買取専門用語の補正辞書
+// 買取専門用語の補正辞書（Geminiに渡すプロンプトに組み込む）
 var _rpMicDict = [
   ['ローレックス','ロレックス'],['ロレクス','ロレックス'],['シャネール','シャネル'],
   ['エルメース','エルメス'],['ルイビトン','ルイ・ヴィトン'],['ルイヴィトン','ルイ・ヴィトン'],
   ['グッチー','グッチ'],['カルチェ','カルティエ'],['カルティエール','カルティエ'],
   ['オメーガ','オメガ'],['パテックフィリップ','パテック フィリップ'],
-  ['じゅうはちきん','18金'],['18きん','18金'],['けいじゅうよん','K14'],
+  ['じゅうはちきん','18金'],['18きん','18金'],
   ['プラチナム','プラチナ'],['ダイアモンド','ダイヤモンド'],['ダイア','ダイヤ'],
   ['ブランドバック','ブランドバッグ'],['査定がく','査定額'],['かいとりかかく','買取価格'],
-  ['アキュフェーズ','アキュフェーズ'],['マッサージチェアー','マッサージチェア'],
-  ['インゴット','インゴット'],['ネブライザー','ネブライザー'],
 ];
 
 function rpFixMicText(text) {
@@ -6819,94 +6709,203 @@ function rpFixMicText(text) {
   return text;
 }
 
-function rpToggleMic() {
-  if (_rpMicActive) {
-    rpStopMic();
-  } else {
-    rpStartMic();
+// MIMEタイプ選択（iOS Safari優先）
+function getMicMimeType() {
+  var types = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus','audio/ogg'];
+  for (var i = 0; i < types.length; i++) {
+    if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(types[i])) return types[i];
   }
+  return '';
 }
 
-function rpStartMic() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert('お使いのブラウザは音声入力に対応していません。\nChromeをお試しください。');
+// 録音開始（共通）
+async function geminiMicStart(target) {
+  if (_geminiMicActive) { geminiMicStop(); return; }
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  if (!key) { alert('Gemini APIキーを設定してください（管理画面 > 設定）'); return; }
+
+  try {
+    _geminiMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(e) {
+    alert('マイクの使用が許可されていません。\nブラウザの設定でマイクを許可してください。');
     return;
   }
 
-  _rpRecognition = new SpeechRecognition();
-  _rpRecognition.lang = 'ja-JP';
-  _rpRecognition.continuous = true;       // 話し続けても認識継続
-  _rpRecognition.interimResults = true;   // 途中結果も表示
-  _rpRecognition.maxAlternatives = 1;
+  _geminiMicTarget = target;
+  _geminiMicChunks = [];
+  var mimeType = getMicMimeType();
+  _geminiMicRecorder = new MediaRecorder(_geminiMicStream, mimeType ? { mimeType: mimeType } : {});
 
-  var inputEl = document.getElementById('rp-input');
-  var baseText = inputEl.value; // 既存テキストを保持
-
-  _rpRecognition.onstart = function() {
-    _rpMicActive = true;
-    var btn = document.getElementById('rp-mic-btn');
-    var status = document.getElementById('rp-mic-status');
-    if (btn) { btn.style.background = '#FDECEA'; btn.style.borderColor = 'var(--rd)'; btn.textContent = '⏹'; }
-    if (status) status.style.display = 'block';
+  _geminiMicRecorder.ondataavailable = function(e) {
+    if (e.data && e.data.size > 0) _geminiMicChunks.push(e.data);
   };
 
-  _rpRecognition.onresult = function(e) {
-    var interim = '';
-    var final = '';
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      var t = e.results[i][0].transcript;
-      if (e.results[i].isFinal) {
-        final += rpFixMicText(t);
-      } else {
-        interim += t;
-      }
-    }
-    if (final) baseText += final;
-    // 確定テキスト＋途中テキストを表示
-    inputEl.value = baseText + interim;
-    inputEl.scrollTop = inputEl.scrollHeight;
-  };
-
-  _rpRecognition.onerror = function(e) {
-    if (e.error === 'no-speech') return; // 無音は無視
-    if (e.error === 'not-allowed') {
-      alert('マイクの使用が許可されていません。\nブラウザの設定でマイクを許可してください。');
-    }
-    rpStopMic();
-  };
-
-  _rpRecognition.onend = function() {
-    // continuous=trueでも接続が切れた場合、アクティブなら再接続
-    if (_rpMicActive) {
-      try { _rpRecognition.start(); } catch(e) {}
+  _geminiMicRecorder.onstop = function() {
+    var blob = new Blob(_geminiMicChunks, { type: _geminiMicRecorder.mimeType || 'audio/webm' });
+    geminiMicTranscribe(blob);
+    // ストリーム停止
+    if (_geminiMicStream) {
+      _geminiMicStream.getTracks().forEach(function(t) { t.stop(); });
+      _geminiMicStream = null;
     }
   };
+
+  _geminiMicRecorder.start(100); // 100ms毎にチャンク
+  _geminiMicActive = true;
+  geminiMicUpdateUI(target, true);
+}
+
+// 録音停止
+function geminiMicStop() {
+  if (!_geminiMicActive) return;
+  _geminiMicActive = false;
+  if (_geminiMicRecorder && _geminiMicRecorder.state !== 'inactive') {
+    _geminiMicRecorder.stop();
+  }
+  geminiMicUpdateUI(_geminiMicTarget, false);
+}
+
+// UI更新
+function geminiMicUpdateUI(target, active) {
+  if (target === 'ai-search') {
+    var btn = document.getElementById('rp-ai-mic-btn');
+    var st = document.getElementById('rp-ai-mic-status');
+    if (btn) {
+      btn.style.background = active ? '#FDECEA' : '#fff';
+      btn.style.borderColor = active ? 'var(--rd)' : 'var(--bd)';
+      btn.textContent = active ? '⏹' : '🎤';
+    }
+    if (st) st.style.display = active ? 'block' : 'none';
+  } else if (target === 'rp') {
+    var btn2 = document.getElementById('rp-mic-btn');
+    var st2 = document.getElementById('rp-mic-status');
+    if (btn2) {
+      btn2.style.background = active ? '#FDECEA' : '#fff';
+      btn2.style.borderColor = active ? 'var(--rd)' : 'var(--bd)';
+      btn2.textContent = active ? '⏹' : '🎤';
+    }
+    if (st2) st2.style.display = active ? 'block' : 'none';
+  }
+}
+
+// Gemini APIで文字起こし
+async function geminiMicTranscribe(blob) {
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  if (!key) return;
+
+  // UI: 変換中表示
+  geminiMicSetProcessing(true);
 
   try {
-    _rpRecognition.start();
+    // Base64変換
+    var arrayBuffer = await blob.arrayBuffer();
+    var uint8 = new Uint8Array(arrayBuffer);
+    var binary = '';
+    for (var i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+    var base64 = btoa(binary);
+
+    // MIMEタイプ
+    var mimeType = blob.type || 'audio/webm';
+    // Geminiが対応するmimeTypeに正規化
+    if (mimeType.indexOf('webm') >= 0) mimeType = 'audio/webm';
+    else if (mimeType.indexOf('mp4') >= 0) mimeType = 'audio/mp4';
+    else if (mimeType.indexOf('ogg') >= 0) mimeType = 'audio/ogg';
+
+    var systemPrompt = '以下の音声を日本語でテキストに変換してください。買取業・リユース業の接客場面の会話です。' +
+      'ブランド名や専門用語（ロレックス、エルメス、18金、プラチナ、査定、買取価格など）を正確に認識してください。' +
+      'テキストのみを返してください。句読点・改行は不要です。';
+
+    var res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: systemPrompt },
+              { inline_data: { mime_type: mimeType, data: base64 } }
+            ]
+          }],
+          generationConfig: { temperature: 0, maxOutputTokens: 500 }
+        })
+      }
+    );
+
+    var data = await res.json();
+    var text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    if (text) {
+      text = rpFixMicText(text);
+      geminiMicApplyText(text);
+    } else {
+      alert('音声を認識できませんでした。もう一度お試しください。');
+    }
   } catch(e) {
-    alert('音声認識の開始に失敗しました: ' + e.message);
+    alert('音声変換中にエラーが発生しました: ' + e.message);
+  } finally {
+    geminiMicSetProcessing(false);
   }
 }
 
-function rpStopMic() {
-  _rpMicActive = false;
-  if (_rpRecognition) {
-    try { _rpRecognition.stop(); } catch(e) {}
-    _rpRecognition = null;
+// テキストを対象inputに適用
+function geminiMicApplyText(text) {
+  if (_geminiMicTarget === 'ai-search') {
+    var inp = document.getElementById('rp-ai-search-input');
+    if (inp) { inp.value = text; }
+    rpAiSearch(); // そのまま検索実行
+  } else if (_geminiMicTarget === 'rp') {
+    var inp2 = document.getElementById('rp-input');
+    if (inp2) {
+      inp2.value = (inp2.value ? inp2.value + ' ' : '') + text;
+      inp2.focus();
+    }
   }
-  var btn = document.getElementById('rp-mic-btn');
-  var status = document.getElementById('rp-mic-status');
-  if (btn) { btn.style.background = '#fff'; btn.style.borderColor = 'var(--bd)'; btn.textContent = '🎤'; }
-  if (status) status.style.display = 'none';
 }
 
-// ロープレ終了・リスタート時にマイクも止める
-var _origRpRestart = rpRestart;
-rpRestart = function() { rpStopMic(); _origRpRestart(); };
-var _origRpBackToSelect = rpBackToSelect;
-rpBackToSelect = function() { rpStopMic(); _origRpBackToSelect(); };
+// 変換中UI
+function geminiMicSetProcessing(isProcessing) {
+  if (_geminiMicTarget === 'ai-search') {
+    var st = document.getElementById('rp-ai-mic-status');
+    if (st) st.textContent = isProcessing ? '⏳ 変換中…' : '🔴 録音中…（もう一度押すと停止）';
+    if (st && !isProcessing) st.style.display = 'none';
+    var btn = document.getElementById('rp-ai-mic-btn');
+    if (btn) { btn.disabled = isProcessing; btn.textContent = isProcessing ? '⏳' : '🎤'; }
+  } else if (_geminiMicTarget === 'rp') {
+    var st2 = document.getElementById('rp-mic-status');
+    if (st2) st2.textContent = isProcessing ? '⏳ 変換中…' : '🔴 録音中…（もう一度押すと停止）';
+    if (st2 && !isProcessing) st2.style.display = 'none';
+    var btn2 = document.getElementById('rp-mic-btn');
+    if (btn2) { btn2.disabled = isProcessing; btn2.textContent = isProcessing ? '⏳' : '🎤'; }
+  }
+}
+
+// ===== 旧Web Speech APIの関数を新Gemini実装に置き換え =====
+
+// AI検索マイク
+function rpAiSearchMic() {
+  geminiMicStart('ai-search');
+}
+function rpAiStopMic() {
+  geminiMicStop();
+}
+
+// ロープレ会話マイク
+function rpToggleMic() {
+  if (_geminiMicActive && _geminiMicTarget === 'rp') {
+    geminiMicStop();
+  } else {
+    geminiMicStart('rp');
+  }
+}
+function rpStartMic() { geminiMicStart('rp'); }
+function rpStopMic() { geminiMicStop(); }
+
+// ロープレ終了・リスタート時にマイクも止める（既存コードのオーバーライドを上書き）
+var _origRpRestart = typeof rpRestart !== 'undefined' ? rpRestart : null;
+rpRestart = function() { geminiMicStop(); if (_origRpRestart) _origRpRestart(); };
+var _origRpBackToSelect = typeof rpBackToSelect !== 'undefined' ? rpBackToSelect : null;
+rpBackToSelect = function() { geminiMicStop(); if (_origRpBackToSelect) _origRpBackToSelect(); };
 
 function renderApiKeySetting() {
   var key = localStorage.getItem('hanamaru_gemini_key') || '';
