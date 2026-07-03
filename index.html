@@ -256,7 +256,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 .s-name{font-size:16px;font-weight:700;color:var(--tx);margin-bottom:3px;}
 .s-sub{font-size:13px;color:var(--mu);}
 .mn-section{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:20px 22px;margin-bottom:14px;}
-.gl-card{background:#fff;border:1.5px solid var(--bd);border-radius:10px;padding:0;margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.gl-card{background:#fff;border:1.5px solid var(--bd);border-radius:10px;padding:0;margin-bottom:8px;overflow:hidden;cursor:pointer;transition:border-color .15s;width:100%;text-align:left;font-family:inherit;display:block;-webkit-appearance:none;}
 .gl-card:hover{border-color:var(--nv2);}
 .gl-card-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .gl-card-body{display:none;padding:0 16px 14px;font-size:14px;color:var(--mu);line-height:1.75;border-top:1px solid var(--bd);}
@@ -3348,7 +3348,7 @@ function renderAdminGl() {
         // 初期データも編集できるように - コピーして追加する形
         h += '<button class="btn-edit" style="flex-shrink:0;" onclick="copyBaseGl(' + JSON.stringify(g).replace(/"/g, '&quot;') + ')">編集コピー</button>';
       }
-      h += '</div>';
+      h += '</button>';
     });
     h += '<div style="margin-bottom:16px;"></div>';
   }
@@ -3767,7 +3767,7 @@ function renderGlossary() {
     groups[cat].forEach(function(g, i) {
       var isExtra = !!g.id; // extra items have an id
       var cardId = 'glc-' + cat.replace(/\s/g,'') + '-' + i;
-      h += '<div class="gl-card" onclick="glToggle(\'' + cardId + '\')">';
+      h += '<button type="button" class="gl-card" onclick="glToggle(\'' + cardId + '\')">';
       h += '<div class="gl-card-head">';
       h += '<div><div class="gl-term">' + srEsc(g.term) + (isExtra ? ' <span class="badge-new">追加</span>' : '') + '</div>';
       h += '<div class="gl-cat" style="display:none;">' + srEsc(g.cat) + '</div></div>';
@@ -5906,7 +5906,7 @@ function renderSearchResults(q, lower) {
       h += '<span class="sr-badge sr-badge-pr">価格表</span></button>';
     });
     if (_srResults.pr.length > 5) {
-      h += '<div style="font-size:13px;color:var(--nv);text-align:center;padding:8px;cursor:pointer;" onclick="srClickPr()">→ 価格表で全' + _srResults.pr.length + '件を見る</div>';
+      h += '<button type="button" style="font-size:13px;color:var(--nv);text-align:center;padding:8px;cursor:pointer;background:none;border:none;width:100%;font-family:inherit;" onclick="srClickPr()">→ 価格表で全' + _srResults.pr.length + '件を見る</button>';
     }
     h += '</div>';
   }
@@ -6898,6 +6898,77 @@ function geminiMicSetProcessing(isProcessing) {
     var btn2 = document.getElementById('rp-mic-btn');
     if (btn2) { btn2.disabled = isProcessing; btn2.textContent = isProcessing ? '⏳' : '🎤'; }
   }
+}
+
+// ===== AIシナリオ検索（テキスト入力 or マイク後に呼ばれる）=====
+async function rpAiSearch() {
+  var query = (document.getElementById('rp-ai-search-input')?.value || '').trim();
+  if (!query) return;
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  if (!key) { alert('APIキーを設定してください（管理画面 > 設定）'); return; }
+
+  var resultEl = document.getElementById('rp-ai-search-result');
+  var btn = document.getElementById('rp-ai-search-btn');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div style="color:var(--mu);font-size:14px;">🔍 シナリオを探しています...</div>';
+  if (btn) { btn.disabled = true; btn.textContent = '検索中…'; }
+
+  var scenarioList = _rpScenarios.map(function(s) {
+    return s.id + '|' + s.title + '|' + s.category + '|' + (s.tags||[]).join(',') + '|' + s.type;
+  }).join('\n');
+
+  var prompt = 'あなたは買取店スタッフ向けロープレシステムのシナリオ選択AIです。\n\n';
+  prompt += '【ユーザーのリクエスト】\n' + query + '\n\n';
+  prompt += '【シナリオ一覧（id|タイトル|カテゴリ|タグ|type）】\n' + scenarioList + '\n\n';
+  prompt += '上記リクエストに最も合うシナリオを3件まで選んでください。\n';
+  prompt += 'JSONのみで返答してください（前後のテキスト・コードブロック不要）:\n';
+  prompt += '{"matches":[{"id":"シナリオID","reason":"選んだ理由（20字以内）"}]}';
+
+  try {
+    var res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{role:'user',parts:[{text:prompt}]}], generationConfig:{temperature:0.2} }) }
+    );
+    var data = await res.json();
+    var raw = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    var parsed = JSON.parse(raw);
+    var matches = parsed.matches || [];
+
+    if (matches.length === 0) {
+      resultEl.innerHTML = '<div style="color:var(--mu);font-size:14px;">該当するシナリオが見つかりませんでした。別のキーワードで試してください。</div>';
+    } else {
+      var html = '<div style="font-size:13px;font-weight:700;color:var(--nv);margin-bottom:10px;">✨ ' + matches.length + '件のシナリオが見つかりました</div>';
+      matches.forEach(function(m) {
+        var sc = _rpScenarios.find(function(s){return s.id===m.id;});
+        if (!sc) return;
+        var typeLabel = sc.type==='store'?'🏪 店頭':'🏠 出張';
+        var diffColor = sc.difficulty==='初級'?'#1A7A4A':sc.difficulty==='中級'?'#E87000':'#C0392B';
+        html += '<button onclick="rpStart(\''+sc.id+'\')" type="button" style="width:100%;text-align:left;background:#fff;border:1.5px solid var(--nv);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;display:block;font-family:inherit;">' +
+          '<div style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between;">' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:14px;font-weight:700;color:#333;margin-bottom:4px;">' + sc.title + '</div>' +
+              '<div style="font-size:12px;color:var(--mu);margin-bottom:6px;">' + typeLabel + ' · ' + sc.category + ' · <span style="color:'+diffColor+';font-weight:600;">' + sc.difficulty + '</span></div>' +
+              '<div style="font-size:12px;color:#666;">' + (m.reason||'') + '</div>' +
+            '</div>' +
+            '<span style="background:var(--nv);color:#fff;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0;align-self:center;">開始</span>' +
+          '</div>' +
+        '</button>';
+      });
+      resultEl.innerHTML = html;
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<div style="color:var(--rd);font-size:14px;">検索に失敗しました: ' + e.message + '</div>';
+  }
+  if (btn) { btn.disabled=false; btn.textContent='検索'; }
+}
+
+// 管理者判定＆シナリオ一覧表示制御
+function rpCheckAdminAccess() {
+  var isAdmin = _currentStaff && _currentStaff.role === 'admin';
+  if (!isAdmin) isAdmin = !!localStorage.getItem('hanamaru_admin_logged');
+  var wrap = document.getElementById('rp-scenario-list-wrap');
+  if (wrap) wrap.style.display = isAdmin ? '' : 'none';
 }
 
 // ===== 旧Web Speech APIの関数を新Gemini実装に置き換え =====
