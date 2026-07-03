@@ -44,7 +44,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 .db:hover{border-color:var(--nv2);color:var(--nv);}
 .db.on{border-color:var(--nv);background:var(--nv2);color:#fff;}
 .s-list{display:flex;flex-direction:column;gap:8px;}
-.sc{background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:16px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color .15s,background .1s;}
+.sc{background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:16px 20px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color .15s,background .1s;width:100%;text-align:left;font-family:inherit;font-size:inherit;-webkit-appearance:none;}
 .sc:hover{border-color:var(--nv2);background:#F5F8FF;}
 .sc-icon{font-size:22px;flex-shrink:0;}
 .sc-body{flex:1;min-width:0;}
@@ -157,7 +157,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 .sr-section{margin-bottom:14px;}
 .sr-section-title{font-size:13px;font-weight:700;color:var(--mu);padding:6px 12px;background:var(--bg);border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.sr-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border:1.5px solid var(--bd);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:border-color .1s,background .1s;}
+.sr-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#fff;border:1.5px solid var(--bd);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:border-color .1s,background .1s;width:100%;text-align:left;font-family:inherit;font-size:inherit;-webkit-appearance:none;}
 .sr-item:hover{border-color:var(--nv2);background:#F5F8FF;}
 .sr-title{font-size:15px;font-weight:600;flex:1;}
 .sr-sub{font-size:13px;color:var(--mu);margin-top:2px;}
@@ -207,7 +207,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 .glossary-desc{font-size:14px;color:var(--mu);line-height:1.75;}
 
 
-.flow-card{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color .15s,background .1s;}
+.flow-card{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:border-color .15s,background .1s;width:100%;text-align:left;font-family:inherit;font-size:inherit;-webkit-appearance:none;}
 .flow-card:hover{border-color:var(--nv2);background:#F5F8FF;}
 .flow-card-icon{font-size:22px;flex-shrink:0;}
 .flow-card-body{flex:1;min-width:0;}
@@ -250,7 +250,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 .talk-card-meta{font-size:12px;color:var(--lt);margin-top:6px;}
 
 
-.s-card{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:16px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:border-color .15s,background .1s;} .s-card:hover{border-color:var(--nv2);background:#F5F8FF;}
+.s-card{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:16px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:border-color .15s,background .1s;width:100%;text-align:left;font-family:inherit;font-size:inherit;-webkit-appearance:none;} .s-card:hover{border-color:var(--nv2);background:#F5F8FF;}
 .s-icon{font-size:26px;flex-shrink:0;}
 .s-body{flex:1;min-width:0;}
 .s-name{font-size:16px;font-weight:700;color:var(--tx);margin-bottom:3px;}
@@ -3145,11 +3145,11 @@ function renderTalkList() {
     // Category cards
     var html = '';
     TALK_DATA.forEach(function(cat) {
-      html += '<div class="s-card" onclick="setTalkCat(' + cat.id + ')">';
+      html += '<button class="s-card" onclick="setTalkCat(' + cat.id + ')" type="button">';
       html += '<div class="s-icon">💬</div>';
       html += '<div class="s-body"><div class="s-name">' + cat.cat + '</div>';
       html += '<div class="s-sub">' + cat.rows.length + '件の切り返しトーク</div></div>';
-      html += '<div class="s-arr">›</div></div>';
+      html += '<div class="s-arr">›</div></button>';
     });
     el.innerHTML = html;
   } else {
@@ -3529,11 +3529,11 @@ function renderFlowList() {
   var h = '';
   if (q) h += '<div style="font-size:14px;color:var(--mu);margin-bottom:10px;">' + filtered.length + '件見つかりました</div>';
   filtered.forEach(function(f) {
-    h += '<div class="flow-card" onclick="showFlowDetail(' + f.id + ')">';
+    h += '<button class="flow-card" onclick="showFlowDetail(' + f.id + ')" type="button">';
     h += '<div class="flow-card-icon">' + (catIcon[f.cat] || '🆘') + '</div>';
     h += '<div class="flow-card-body"><div class="flow-card-title">' + srEsc(f.title) + '</div>';
     h += '<div class="flow-card-trigger">' + srEsc(f.trigger) + '</div></div>';
-    h += '<div class="s-arr">›</div></div>';
+    h += '<div class="s-arr">›</div></button>';
   });
   el.innerHTML = h;
 }
@@ -5857,10 +5857,10 @@ function renderSearchResults(q, lower) {
     h += '<div class="sr-section"><div class="sr-section-title">🎭 ロープレ（' + _srResults.rp.length + '件）</div>';
     _srResults.rp.slice(0,6).forEach(function(s, i) {
       var dl = {1:'★初級',2:'★★中級',3:'★★★上級'}[s.diff]||'';
-      h += '<div class="sr-item" onclick="srClickRp('+i+')">';
+      h += '<button class="sr-item" onclick="srClickRp('+i+')" type="button">';
       h += '<div style="flex:1;"><div class="sr-title">' + srHl(s.title, lower) + '</div>';
       h += '<div class="sr-sub">' + srEsc(s.cat) + ' / ' + dl + ' — ' + srHl(s.summary, lower) + '</div></div>';
-      h += '<span class="sr-badge sr-badge-rp">ロープレ</span></div>';
+      h += '<span class="sr-badge sr-badge-rp">ロープレ</span></button>';
     });
     h += '</div>';
   }
@@ -5868,10 +5868,10 @@ function renderSearchResults(q, lower) {
   if (_srResults.mn.length) {
     h += '<div class="sr-section"><div class="sr-section-title">📖 マニュアル（' + _srResults.mn.length + '件）</div>';
     _srResults.mn.slice(0,4).forEach(function(item) {
-      h += '<div class="sr-item" onclick="srClickMn()">';
+      h += '<button class="sr-item" onclick="srClickMn()" type="button">';
       h += '<div style="flex:1;"><div class="sr-title">' + srHl(item.title, lower) + '</div>';
       h += '<div class="sr-sub">接客・トラブル対応マニュアル</div></div>';
-      h += '<span class="sr-badge sr-badge-mn">マニュアル</span></div>';
+      h += '<span class="sr-badge sr-badge-mn">マニュアル</span></button>';
     });
     h += '</div>';
   }
@@ -5880,10 +5880,10 @@ function renderSearchResults(q, lower) {
     var showCount = Math.min(5, _srResults.pr.length);
     h += '<div class="sr-section"><div class="sr-section-title">💴 金券価格表（' + _srResults.pr.length + '件）</div>';
     _srResults.pr.slice(0, showCount).forEach(function(r) {
-      h += '<div class="sr-item" onclick="srClickPr()">';
+      h += '<button class="sr-item" onclick="srClickPr()" type="button">';
       h += '<div style="flex:1;"><div class="sr-title">' + srHl(r.name, lower) + '</div>';
       h += '<div class="sr-sub">' + srEsc(r.id) + ' / ' + srEsc(r.issuer) + ' / ¥' + r.price.toLocaleString() + '</div></div>';
-      h += '<span class="sr-badge sr-badge-pr">価格表</span></div>';
+      h += '<span class="sr-badge sr-badge-pr">価格表</span></button>';
     });
     if (_srResults.pr.length > 5) {
       h += '<div style="font-size:13px;color:var(--nv);text-align:center;padding:8px;cursor:pointer;" onclick="srClickPr()">→ 価格表で全' + _srResults.pr.length + '件を見る</div>';
@@ -5978,13 +5978,13 @@ function RS() {
   var h = '';
   for (var i = 0; i < list.length; i++) {
     var s = list[i];
-    h += '<div class="sc" onclick="SD_page(' + s.id + ')">';
+    h += '<button class="sc" onclick="SD_page(' + s.id + ')" type="button">';
     h += '<div class="sc-icon">' + (ci[s.cat] || '📋') + '</div>';
     h += '<div class="sc-body"><div class="sc-name">' + s.title + '</div>';
     h += '<div class="sc-sub">' + s.summary + '</div>';
     h += '<div class="sc-tags"><span class="stag ' + (cs[s.cat] || '') + '">' + s.cat + '</span>';
     h += '<span class="stag ' + dl[s.diff][1] + '">' + dl[s.diff][0] + '</span></div></div>';
-    h += '<div class="sc-arr">›</div></div>';
+    h += '<div class="sc-arr">›</div></button>';
   }
   document.getElementById('SL').innerHTML = h;
 }
