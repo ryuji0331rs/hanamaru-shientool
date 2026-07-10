@@ -429,10 +429,11 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     <div style="margin-bottom:8px;">
       <div style="font-size:11px;font-weight:700;color:#E87000;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
         <span style="background:#E87000;width:3px;height:14px;border-radius:2px;display:inline-block;"></span>
-        今日の準備
+        今日の準備・振り返り
       </div>
       <div style="display:grid;grid-template-columns:1fr;gap:10px;">
         <button class="hm-card" onclick="GP('visit-check')" type="button" style="border:1.5px solid #FFD599;background:linear-gradient(135deg,#FFFBF5,#FFF8EE);"><div class="hm-icon" style="background:#FFF3E0;"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="5" y="3" width="18" height="22" rx="2" fill="#E87000" opacity=".15"/><rect x="5" y="3" width="18" height="22" rx="2" stroke="#E87000" stroke-width="1.5"/><line x1="9" y1="9" x2="19" y2="9" stroke="#E87000" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="13" x2="19" y2="13" stroke="#E87000" stroke-width="1.5" stroke-linecap="round"/><line x1="9" y1="17" x2="15" y2="17" stroke="#E87000" stroke-width="1.5" stroke-linecap="round"/><circle cx="21" cy="21" r="5" fill="#E87000"/><path d="M19 21l1.5 1.5L23 19" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="hm-title">訪問前チェックシート</div><div class="hm-desc">PDF読み込み・AI準備シート生成</div><div class="hm-arrow">→</div></button>
+        <button class="hm-card" onclick="GP('review')" type="button" style="border:1.5px solid #C8E6C9;background:linear-gradient(135deg,#F9FFF9,#F1FBF1);"><div class="hm-icon" style="background:#E8F5E9;"><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="4" width="20" height="20" rx="3" fill="#1A7A4A" opacity=".12"/><rect x="4" y="4" width="20" height="20" rx="3" stroke="#1A7A4A" stroke-width="1.5"/><path d="M9 10h10M9 14h10M9 18h6" stroke="#1A7A4A" stroke-width="1.5" stroke-linecap="round"/><circle cx="21" cy="21" r="5" fill="#1A7A4A"/><path d="M18.5 21l1.5 1.5L23 19" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="hm-title">振り返りチェックシート</div><div class="hm-desc">文字起こし貼り付け・AI分析・履歴保存</div><div class="hm-arrow">→</div></button>
       </div>
     </div>
 
@@ -467,6 +468,113 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 </div>
+
+<!-- 振り返りチェックシート -->
+<div class="pg" data-page="review">
+  <div class="ph">
+    <button class="back-btn" onclick="GP('home')" type="button">← ホームへ戻る</button>
+    <div class="pt">📋 振り返りチェックシート</div>
+    <div class="pd">接客の文字起こしを貼り付けてAIが分析・保存します</div>
+  </div>
+  <div class="content">
+
+    <!-- タブ：入力 / 履歴 -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--bd);">
+      <button type="button" id="rv-tab-new" onclick="rvSwitchTab('new')" style="padding:10px 20px;font-size:14px;font-weight:700;border:none;background:none;color:var(--nv);border-bottom:2px solid var(--nv);margin-bottom:-2px;cursor:pointer;font-family:inherit;">✍️ 新規分析</button>
+      <button type="button" id="rv-tab-history" onclick="rvSwitchTab('history')" style="padding:10px 20px;font-size:14px;font-weight:700;border:none;background:none;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;font-family:inherit;">📂 履歴</button>
+    </div>
+
+    <!-- 新規分析パネル -->
+    <div id="rv-panel-new">
+      <!-- APIキー未設定警告 -->
+      <div id="rv-key-warn" style="display:none;background:#FFF3E0;border-left:4px solid #E87000;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:16px;font-size:14px;color:#E87000;">
+        ⚠️ Gemini APIキーが未設定です。管理画面 → API設定 から設定してください。
+      </div>
+      <!-- ログイン警告 -->
+      <div id="rv-login-warn" style="display:none;background:#FFF3E0;border-left:4px solid #E87000;border-radius:0 8px 8px 0;padding:12px 16px;margin-bottom:16px;font-size:14px;color:#E87000;">
+        ⚠️ 履歴保存にはスタッフログインが必要です。ログインせずに分析のみ行えます。
+      </div>
+
+      <!-- 入力フォーム -->
+      <div style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:700;color:var(--nv);display:block;margin-bottom:6px;">日付・訪問先メモ（任意）</label>
+        <input type="text" id="rv-memo" placeholder="例：7/10 田中様宅・着物2点" style="width:100%;padding:10px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:700;color:var(--nv);display:block;margin-bottom:6px;">文字起こしテキスト <span style="color:var(--rd);">*</span></label>
+        <textarea id="rv-text" rows="10" placeholder="音声の文字起こしをここに貼り付けてください..." style="width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.7;"></textarea>
+      </div>
+      <button type="button" id="rv-analyze-btn" onclick="rvAnalyze()" style="width:100%;padding:14px;background:var(--nv);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+        🔍 AIで分析する
+      </button>
+
+      <!-- ローディング -->
+      <div id="rv-loading" style="display:none;text-align:center;padding:40px;">
+        <div style="font-size:32px;margin-bottom:12px;">⏳</div>
+        <div style="font-size:14px;color:var(--mu);">分析中…少々お待ちください</div>
+      </div>
+
+      <!-- 分析結果 -->
+      <div id="rv-result" style="display:none;margin-top:20px;">
+        <div id="rv-result-card" style="background:#fff;border:1.5px solid var(--bd);border-radius:14px;overflow:hidden;">
+
+          <!-- ヘッダー -->
+          <div style="background:var(--nv);color:#fff;padding:14px 18px;">
+            <div style="font-size:11px;opacity:.7;margin-bottom:3px;">振り返りチェックシート</div>
+            <div id="rv-result-title" style="font-size:16px;font-weight:700;"></div>
+          </div>
+
+          <!-- 良かった点 -->
+          <div style="padding:14px 18px;border-bottom:1px solid var(--bd);background:#F1FBF1;">
+            <div style="font-size:12px;font-weight:700;color:#1A7A4A;margin-bottom:8px;">✅ 良かった点</div>
+            <div id="rv-good" style="font-size:14px;line-height:1.8;color:#333;"></div>
+          </div>
+
+          <!-- ダメだった点 -->
+          <div style="padding:14px 18px;border-bottom:1px solid var(--bd);">
+            <div style="font-size:12px;font-weight:700;color:var(--rd);margin-bottom:8px;">❌ 改善が必要な点</div>
+            <div id="rv-bad" style="font-size:14px;line-height:1.8;color:#333;"></div>
+          </div>
+
+          <!-- 切り返しトーク -->
+          <div style="padding:14px 18px;border-bottom:1px solid var(--bd);background:#F4F6FB;">
+            <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:8px;">💬 この場面で使えた切り返しトーク</div>
+            <div id="rv-talks" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+
+          <!-- コンプライアンス -->
+          <div style="padding:14px 18px;border-bottom:1px solid var(--bd);">
+            <div style="font-size:12px;font-weight:700;color:#C0392B;margin-bottom:8px;">⚖️ コンプライアンスチェック（出張買取）</div>
+            <div id="rv-compliance" style="display:flex;flex-direction:column;gap:6px;font-size:14px;"></div>
+          </div>
+
+          <!-- 次回アドバイス -->
+          <div style="padding:14px 18px;">
+            <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:8px;">📝 次回への一言アドバイス</div>
+            <div id="rv-advice" style="font-size:14px;line-height:1.8;color:#333;background:#EEF2FF;border-radius:8px;padding:10px 14px;"></div>
+          </div>
+        </div>
+
+        <!-- 保存ボタン -->
+        <button type="button" id="rv-save-btn" onclick="rvSave()" style="width:100%;margin-top:14px;padding:14px;background:#1A7A4A;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">
+          💾 履歴として保存する
+        </button>
+        <button type="button" onclick="rvReset()" style="width:100%;margin-top:8px;padding:10px;background:#fff;color:var(--mu);border:1.5px solid var(--bd);border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit;">
+          🔄 やり直す
+        </button>
+      </div>
+    </div>
+
+    <!-- 履歴パネル -->
+    <div id="rv-panel-history" style="display:none;">
+      <div id="rv-history-list" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="text-align:center;padding:40px;color:var(--mu);">読み込み中...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
 <!-- 訪問前チェックシート -->
 <div class="pg" data-page="visit-check">
@@ -6078,6 +6186,7 @@ function GP(page) {
   if (page === 'glossary') { initGlossaryCats(); renderGlossary(); }
   if (page === 'flow') { initFlowCats(); renderFlowList(); }
   if (page === 'visit-check') initVisitCheck();
+  if (page === 'review') initReview();
   if (page === 'rp-mode') { initRoleplay(); }
   if (page === 'manual') renderExtraManuals();
   if (page === 'admin' || page === 'admin-login') {}
@@ -7692,6 +7801,265 @@ function vcPrint() {
   win.document.close();
   win.focus();
   setTimeout(function(){ win.print(); }, 500);
+}
+
+
+// ===== 振り返りチェックシート =====
+var _rvCurrentResult = null;
+var _rvCurrentTab = 'new';
+
+function initReview() {
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  var warn = document.getElementById('rv-key-warn');
+  if (warn) warn.style.display = key ? 'none' : 'block';
+  var loginWarn = document.getElementById('rv-login-warn');
+  if (loginWarn) loginWarn.style.display = _currentStaff ? 'none' : 'block';
+  rvSwitchTab('new');
+}
+
+function rvSwitchTab(tab) {
+  _rvCurrentTab = tab;
+  var tabs = { new: 'new', history: 'history' };
+  Object.keys(tabs).forEach(function(t) {
+    var btn = document.getElementById('rv-tab-' + t);
+    var panel = document.getElementById('rv-panel-' + t);
+    var isActive = t === tab;
+    if (btn) {
+      btn.style.color = isActive ? 'var(--nv)' : 'var(--mu)';
+      btn.style.borderBottomColor = isActive ? 'var(--nv)' : 'transparent';
+    }
+    if (panel) panel.style.display = isActive ? 'block' : 'none';
+  });
+  if (tab === 'history') rvLoadHistory();
+}
+
+async function rvAnalyze() {
+  var key = localStorage.getItem('hanamaru_gemini_key') || '';
+  if (!key) { alert('Gemini APIキーを設定してください（管理画面 → API設定）'); return; }
+  var text = (document.getElementById('rv-text').value || '').trim();
+  if (!text) { alert('文字起こしテキストを入力してください'); return; }
+
+  document.getElementById('rv-analyze-btn').style.display = 'none';
+  document.getElementById('rv-loading').style.display = 'block';
+  document.getElementById('rv-result').style.display = 'none';
+
+  // TALK_DATAから全カテゴリ名を収集
+  var talkCats = TALK_DATA.map(function(c) { return c.cat; }).join('、');
+
+  var prompt = `あなたは買取・リユース業の出張買取スタッフ向け振り返り支援AIです。
+以下は出張買取の接客の文字起こしです。以下の形式でJSONのみ返してください（コードブロック・前後テキスト不要）。
+
+{
+  "good": "良かった点（箇条書き・改行区切り）",
+  "bad": "改善が必要な点（箇条書き・改行区切り）",
+  "talks": [
+    {"scene": "場面の説明", "talk": "使えた切り返しトーク"}
+  ],
+  "compliance": {
+    "告知": "✅/❌/⚠️ + 一言コメント",
+    "クーリングオフ": "✅/❌/⚠️ + 一言コメント",
+    "書面交付": "✅/❌/⚠️ + 一言コメント",
+    "押し買い": "✅/❌/⚠️ + 一言コメント"
+  },
+  "advice": "次回への一言アドバイス（2〜3文）"
+}
+
+【talks】は最大3件。以下のカテゴリを参照：${talkCats}
+【compliance】は出張買取4項目（訪問目的・業者名の告知 / クーリングオフ説明 / 書面交付 / 押し買い禁止）をチェック。
+✅=実施済み、❌=未実施、⚠️=不十分
+
+【文字起こし】
+${text}`;
+
+  try {
+    var res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 2000 }
+        })
+      }
+    );
+    var data = await res.json();
+    var raw = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').replace(/```json|```/g, '').trim();
+    var result = JSON.parse(raw);
+    _rvCurrentResult = result;
+    rvRenderResult(result);
+  } catch(e) {
+    document.getElementById('rv-loading').style.display = 'none';
+    document.getElementById('rv-analyze-btn').style.display = 'block';
+    alert('分析に失敗しました: ' + e.message);
+  }
+}
+
+function rvRenderResult(r) {
+  document.getElementById('rv-loading').style.display = 'none';
+
+  var memo = (document.getElementById('rv-memo').value || '').trim();
+  var dateStr = new Date().toLocaleDateString('ja-JP');
+  document.getElementById('rv-result-title').textContent = memo || dateStr + ' の振り返り';
+
+  // 良かった点
+  var goodEl = document.getElementById('rv-good');
+  if (goodEl) goodEl.innerHTML = (r.good || '').split('
+').filter(Boolean).map(function(l) {
+    return '<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:#1A7A4A;flex-shrink:0;">•</span><span>' + srEsc(l.replace(/^[・•\-]\s*/, '')) + '</span></div>';
+  }).join('');
+
+  // ダメだった点
+  var badEl = document.getElementById('rv-bad');
+  if (badEl) badEl.innerHTML = (r.bad || '').split('
+').filter(Boolean).map(function(l) {
+    return '<div style="display:flex;gap:6px;margin-bottom:4px;"><span style="color:var(--rd);flex-shrink:0;">•</span><span>' + srEsc(l.replace(/^[・•\-]\s*/, '')) + '</span></div>';
+  }).join('');
+
+  // 切り返しトーク
+  var talksEl = document.getElementById('rv-talks');
+  if (talksEl) talksEl.innerHTML = (r.talks || []).map(function(t) {
+    return '<div style="background:#EEF2FF;border-radius:8px;padding:10px 12px;">' +
+      '<div style="font-size:12px;color:var(--mu);margin-bottom:4px;">' + srEsc(t.scene || '') + '</div>' +
+      '<div style="font-size:14px;font-weight:600;color:var(--nv);">「' + srEsc(t.talk || '') + '」</div>' +
+      '</div>';
+  }).join('');
+
+  // コンプライアンス
+  var compEl = document.getElementById('rv-compliance');
+  if (compEl && r.compliance) {
+    var items = [
+      ['告知', '訪問目的・業者名の告知'],
+      ['クーリングオフ', 'クーリングオフ（8日間）の説明'],
+      ['書面交付', '買取金額の書面交付'],
+      ['押し買い', '押し買いをしていないか']
+    ];
+    compEl.innerHTML = items.map(function(item) {
+      var val = r.compliance[item[0]] || '確認不可';
+      var color = val.startsWith('✅') ? '#1A7A4A' : val.startsWith('❌') ? 'var(--rd)' : '#E87000';
+      return '<div style="display:flex;gap:8px;align-items:flex-start;">' +
+        '<span style="flex-shrink:0;font-size:15px;">' + val.charAt(0) + val.charAt(1) + '</span>' +
+        '<div><span style="font-weight:600;">' + srEsc(item[1]) + '</span>' +
+        '<span style="color:' + color + ';margin-left:6px;">' + srEsc(val.slice(2).trim()) + '</span></div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // アドバイス
+  var advEl = document.getElementById('rv-advice');
+  if (advEl) advEl.textContent = r.advice || '';
+
+  document.getElementById('rv-result').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+async function rvSave() {
+  if (!_rvCurrentResult) return;
+  if (!_currentStaff) {
+    alert('保存にはスタッフログインが必要です。');
+    return;
+  }
+  var memo = (document.getElementById('rv-memo').value || '').trim();
+  var text = (document.getElementById('rv-text').value || '').trim();
+  var saveBtn = document.getElementById('rv-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '保存中...'; }
+
+  try {
+    var record = {
+      staff_id: _currentStaff.id,
+      staff_name: _currentStaff.name,
+      memo: memo,
+      transcript: text.slice(0, 2000), // 最大2000文字
+      result: JSON.stringify(_rvCurrentResult),
+      created_at: new Date().toISOString()
+    };
+    var res = await _sb.from('reviews').insert([record]);
+    if (res.error) throw new Error(res.error.message);
+    if (saveBtn) { saveBtn.textContent = '✅ 保存しました'; saveBtn.style.background = '#1A7A4A'; }
+    setTimeout(function() {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 履歴として保存する'; saveBtn.style.background = '#1A7A4A'; }
+    }, 2000);
+  } catch(e) {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 履歴として保存する'; }
+    alert('保存に失敗しました: ' + e.message);
+  }
+}
+
+async function rvLoadHistory() {
+  var listEl = document.getElementById('rv-history-list');
+  if (!listEl) return;
+
+  if (!_currentStaff) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--mu);">履歴を見るにはログインが必要です</div>';
+    return;
+  }
+
+  listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--mu);">読み込み中...</div>';
+
+  try {
+    var isAdmin = _currentStaff.role === 'admin' || !!localStorage.getItem('hanamaru_admin_logged');
+    var query = _sb.from('reviews').select('*').order('created_at', { ascending: false }).limit(50);
+    if (!isAdmin) query = query.eq('staff_id', _currentStaff.id);
+    var res = await query;
+    if (res.error) throw new Error(res.error.message);
+    var records = res.data || [];
+
+    if (!records.length) {
+      listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--mu);">まだ振り返りが保存されていません</div>';
+      return;
+    }
+
+    listEl.innerHTML = records.map(function(r) {
+      var result = {};
+      try { result = JSON.parse(r.result || '{}'); } catch(e) {}
+      var date = new Date(r.created_at).toLocaleDateString('ja-JP');
+      var compliance = result.compliance || {};
+      var compStr = Object.values(compliance).map(function(v) { return (v || '').charAt(0) + (v || '').charAt(1); }).join(' ');
+      return '<div style="background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:16px 18px;cursor:pointer;" onclick="rvShowHistoryDetail(' + JSON.stringify(r).replace(/"/g, '&quot;') + ')">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">' +
+          '<div>' +
+            (isAdmin ? '<div style="font-size:11px;color:var(--mu);margin-bottom:2px;">' + srEsc(r.staff_name || '') + '</div>' : '') +
+            '<div style="font-size:14px;font-weight:700;color:#333;">' + srEsc(r.memo || date + ' の振り返り') + '</div>' +
+            '<div style="font-size:12px;color:var(--mu);margin-top:2px;">' + date + '</div>' +
+          '</div>' +
+          '<div style="font-size:16px;">' + (compStr || '') + '</div>' +
+        '</div>' +
+        '<div style="font-size:13px;color:#555;background:var(--sf);border-radius:6px;padding:6px 10px;">' +
+          srEsc((result.advice || '').slice(0, 60)) + (result.advice && result.advice.length > 60 ? '…' : '') +
+        '</div>' +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--rd);">読み込みに失敗しました</div>';
+  }
+}
+
+function rvShowHistoryDetail(r) {
+  var result = {};
+  try { result = JSON.parse(r.result || '{}'); } catch(e) {}
+  _rvCurrentResult = result;
+  // メモと日付をセット
+  var memoEl = document.getElementById('rv-memo');
+  if (memoEl) memoEl.value = r.memo || '';
+  rvRenderResult(result);
+  rvSwitchTab('new');
+  // 保存ボタンを非表示（既に保存済み）
+  var saveBtn = document.getElementById('rv-save-btn');
+  if (saveBtn) saveBtn.style.display = 'none';
+}
+
+function rvReset() {
+  _rvCurrentResult = null;
+  var memoEl = document.getElementById('rv-memo');
+  var textEl = document.getElementById('rv-text');
+  if (memoEl) memoEl.value = '';
+  if (textEl) textEl.value = '';
+  document.getElementById('rv-result').style.display = 'none';
+  document.getElementById('rv-loading').style.display = 'none';
+  document.getElementById('rv-analyze-btn').style.display = 'block';
+  var saveBtn = document.getElementById('rv-save-btn');
+  if (saveBtn) { saveBtn.style.display = 'block'; saveBtn.disabled = false; saveBtn.textContent = '💾 履歴として保存する'; }
+  window.scrollTo(0, 0);
 }
 
 
