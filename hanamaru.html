@@ -18,7 +18,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 .main{}
 .pg{display:none;padding:24px 28px 48px;}
 .pg.on.pg.on[data-page="chat"]{display:flex!important;flex-direction:column;min-height:100vh;}
-.pg.on{display:block!important;}.pg-hidden{display:none!important;}[data-page="home"]:not(.pg-hidden){display:block;}
+.pg.on{display:block!important;}
 .home-title{font-size:22px;font-weight:700;margin-bottom:6px;}
 .home-sub{font-size:16px;color:var(--mu);margin-bottom:24px;}
 .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;}
@@ -6220,14 +6220,14 @@ function GP(page) {
   var all = document.querySelectorAll('.pg');
   for (var i = 0; i < all.length; i++) {
     all[i].classList.remove('on');
-    all[i].classList.add('pg-hidden');
+    all[i].style.display = 'none';
   }
   var el = document.querySelector('[data-page="' + page + '"]');
-  if (el) { el.classList.add('on'); el.classList.remove('pg-hidden'); }
+  if (el) { el.classList.add('on'); el.style.display = 'block'; }
   if (page === 'roleplay') { _talkCatId = null; initTalkCats(); renderTalkList(); }
   if (page === 'price') { initPriceCats(); RP(); }
   if (page === 'video') renderVideoList();
-  if (page === 'chat') initChat();
+  if (page === 'chat') { initChat(); if (el) el.style.display = 'flex'; }
   if (page === 'glossary') { initGlossaryCats(); renderGlossary(); }
   if (page === 'flow') { initFlowCats(); renderFlowList(); }
   if (page === 'visit-check') initVisitCheck();
