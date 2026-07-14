@@ -550,9 +550,19 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
           </div>
 
           <!-- 次回アドバイス -->
-          <div style="padding:14px 18px;">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--bd);">
             <div style="font-size:12px;font-weight:700;color:var(--nv);margin-bottom:8px;">📝 次回への一言アドバイス</div>
             <div id="rv-advice" style="font-size:14px;line-height:1.8;color:#333;background:#EEF2FF;border-radius:8px;padding:10px 14px;"></div>
+          </div>
+
+          <!-- 再訪問・アポ可能性チェック -->
+          <div style="padding:14px 18px;" id="rv-revisit-block">
+            <div style="font-size:12px;font-weight:700;color:#7A4800;margin-bottom:10px;">📞 再訪問・アポ可能性チェック</div>
+            <div id="rv-revisit-score-row" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <div id="rv-revisit-badge" style="font-size:13px;font-weight:700;padding:5px 14px;border-radius:20px;"></div>
+              <div id="rv-revisit-reason" style="font-size:13px;line-height:1.6;color:#333;"></div>
+            </div>
+            <div id="rv-revisit-patterns" style="display:flex;flex-direction:column;gap:6px;"></div>
           </div>
         </div>
 
@@ -7862,10 +7872,19 @@ async function rvAnalyze() {
     "書面交付": "✅/❌/⚠️ + 一言コメント",
     "押し買い": "✅/❌/⚠️ + 一言コメント"
   },
-  "advice": "次回への一言アドバイス（2〜3文）"
+  "advice": "次回への一言アドバイス（2〜3文）",
+  "revisit": {
+    "score": "高/中/低",
+    "reason": "判定理由（1〜2文）",
+    "patterns": ["家族相談保留", "蔵・実家未整理", "カテゴリ掘り起こし"] // 該当するものだけ
+  }
 }
 
 【talks】は最大3件。以下のカテゴリを参照：${talkCats}
+【revisit】は再訪問・アポ取得の可能性を判定。score="高/中/低"、reason=判定理由、patterns=該当パターン（複数可）。
+・家族相談保留：「家族に相談してから」と保留になった
+・蔵・実家未整理：他にも品物があるが今回は一部のみ
+・カテゴリ掘り起こし：今回以外のカテゴリに未売却品がある可能性
 【compliance】は出張買取4項目（訪問目的・業者名の告知 / クーリングオフ説明 / 書面交付 / 押し買い禁止）をチェック。
 ✅=実施済み、❌=未実施、⚠️=不十分
 
@@ -7947,6 +7966,40 @@ function rvRenderResult(r) {
   // アドバイス
   var advEl = document.getElementById('rv-advice');
   if (advEl) advEl.textContent = r.advice || '';
+
+  // 再訪問・アポ可能性チェック
+  var revisit = r.revisit;
+  var revisitBlock = document.getElementById('rv-revisit-block');
+  if (revisitBlock) {
+    if (revisit && revisit.score) {
+      revisitBlock.style.display = 'block';
+      var badge = document.getElementById('rv-revisit-badge');
+      var scoreColors = { '高': { bg: '#FCEBEB', color: '#791F1F' }, '中': { bg: '#FAEEDA', color: '#633806' }, '低': { bg: '#F1F1F1', color: '#555' } };
+      var sc = scoreColors[revisit.score] || scoreColors['低'];
+      if (badge) { badge.textContent = '再訪可能性：' + revisit.score; badge.style.background = sc.bg; badge.style.color = sc.color; }
+      var reasonEl = document.getElementById('rv-revisit-reason');
+      if (reasonEl) reasonEl.textContent = revisit.reason || '';
+      var patternsEl = document.getElementById('rv-revisit-patterns');
+      if (patternsEl) {
+        var patterns = revisit.patterns || [];
+        var patternInfo = {
+          '家族相談保留': { icon: '👨‍👩‍👧', desc: '家族への相談が必要 → 再訪アポを提案' },
+          '蔵・実家未整理': { icon: '🏠', desc: '他にも品物がある → まとめ買取を提案' },
+          'カテゴリ掘り起こし': { icon: '🔍', desc: '他カテゴリの可能性 → ヒアリングの余地あり' }
+        };
+        patternsEl.innerHTML = patterns.map(function(p) {
+          var info = patternInfo[p] || { icon: '📌', desc: p };
+          return '<div style="display:flex;gap:8px;align-items:flex-start;background:#FEF5E0;border-radius:8px;padding:8px 10px;">' +
+            '<span style="font-size:16px;flex-shrink:0;">' + info.icon + '</span>' +
+            '<div><div style="font-size:12px;font-weight:700;color:#633806;">' + srEsc(p) + '</div>' +
+            '<div style="font-size:12px;color:#7A4800;margin-top:2px;">' + srEsc(info.desc) + '</div></div>' +
+            '</div>';
+        }).join('');
+      }
+    } else {
+      revisitBlock.style.display = 'none';
+    }
+  }
 
   document.getElementById('rv-result').style.display = 'block';
   window.scrollTo(0, 0);
