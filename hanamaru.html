@@ -363,7 +363,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- スタッフログイン画面 -->
-<div class="pg" data-page="login" style="background:#F4F6FB;min-height:100%;">
+<div class="pg" data-page="login" style="display:none;background:#F4F6FB;min-height:100%;">
   <div style="max-width:380px;margin:0 auto;padding:60px 20px;">
     <div style="text-align:center;margin-bottom:32px;">
       <div style="font-size:44px;margin-bottom:8px;">🌸</div>
@@ -389,7 +389,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
   </div>
 </div>
 
-<div class="pg" data-page="home" style="padding:0;background:#F4F6FB;min-height:100%;">
+<div class="pg" data-page="home" id="pg-home" style="display:block;padding:0;background:#F4F6FB;min-height:100%;">
 
   <div style="position:relative;overflow:hidden;background:linear-gradient(160deg,#EEF2FF 0%,#E8F4FD 40%,#EDF9F4 100%);padding:36px 28px 32px;">
     <!-- スタッフバッジ -->
@@ -477,7 +477,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- 振り返りチェックシート -->
-<div class="pg" data-page="review">
+<div class="pg" data-page="review" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')" type="button">← ホームへ戻る</button>
     <div class="pt">📋 振り返りチェックシート</div>
@@ -623,7 +623,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 <!-- 訪問前チェックシート -->
-<div class="pg" data-page="visit-check">
+<div class="pg" data-page="visit-check" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')" type="button">← ホームへ戻る</button>
     <div class="pt">📋 訪問前チェックシート</div>
@@ -738,7 +738,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 <!-- 管理画面ログイン -->
-<div class="pg" data-page="admin-login">
+<div class="pg" data-page="admin-login" style="display:none;">
   <div style="max-width:360px;margin:60px auto;">
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-size:32px;margin-bottom:8px;">⚙️</div>
@@ -764,7 +764,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- 管理画面メイン -->
-<div class="pg" data-page="admin">
+<div class="pg" data-page="admin" style="display:none;">
   <div class="ph">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
       <div class="pt">⚙️ 管理画面</div>
@@ -893,7 +893,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 <!-- 動画ライブラリ -->
-<div class="pg" data-page="video">
+<div class="pg" data-page="video" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">🎬 動画ライブラリ</div>
@@ -924,7 +924,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 <!-- AIチャット -->
-<div class="pg" data-page="chat" style="padding:0;flex-direction:column;">
+<div class="pg" data-page="chat" style="display:none;padding:0;flex-direction:column;">
   <!-- チャットヘッダー -->
   <div style="background:var(--nv);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;position:sticky;top:0;z-index:10;">
     <button onclick="GP('home')" style="background:rgba(255,255,255,.18);border:none;color:#fff;padding:7px 14px;border-radius:7px;font-size:14px;cursor:pointer;">← 戻る</button>
@@ -972,7 +972,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- 用語集 -->
-<div class="pg" data-page="glossary">
+<div class="pg" data-page="glossary" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">📚 用語集</div>
@@ -987,7 +987,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- 困ったときのフロー集 -->
-<div class="pg" data-page="flow">
+<div class="pg" data-page="flow" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">🆘 困ったときのフロー集</div>
@@ -1003,7 +1003,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 <!-- 法務・コンプライアンス -->
-<div class="pg" data-page="legal">
+<div class="pg" data-page="legal" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">⚖️ 法務・コンプライアンス</div>
@@ -1048,7 +1048,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- 金券買取価格表 -->
-<div class="pg" data-page="price">
+<div class="pg" data-page="price" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">💴 金券買取価格表</div>
@@ -1065,7 +1065,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
   <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><div id="PT"></div></div>
 </div>
 
-<div class="pg" data-page="roleplay">
+<div class="pg" data-page="roleplay" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">🎭 切り返しトーク集</div>
@@ -1081,7 +1081,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- トーク詳細 -->
-<div class="pg" data-page="talk-detail">
+<div class="pg" data-page="talk-detail" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← 一覧へ戻る</button>
     <div class="pt" id="talk-detail-title"></div>
@@ -1094,7 +1094,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- 接客マニュアル -->
-<div class="pg" data-page="manual">
+<div class="pg" data-page="manual" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">📖 接客マニュアル</div>
@@ -1164,7 +1164,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- フロー詳細 -->
-<div class="pg" data-page="flow-detail">
+<div class="pg" data-page="flow-detail" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('flow')">← 一覧へ戻る</button>
     <div class="pt" id="flow-detail-title"></div>
@@ -1178,7 +1178,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 
-<div class="pg" data-page="detail-1">
+<div class="pg" data-page="detail-1" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🥇 貴金属のロープレ（基本の型）</div>
@@ -1217,7 +1217,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 <!-- 切り返しトーク集 -->
 
 
-<div class="pg" data-page="detail-2">
+<div class="pg" data-page="detail-2" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">📮 切手・テレカ・金券のロープレ</div>
@@ -1250,7 +1250,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-3">
+<div class="pg" data-page="detail-3" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🤖 ホビーのロープレ</div>
@@ -1285,7 +1285,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-4">
+<div class="pg" data-page="detail-4" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🪡 ミシンのロープレ</div>
@@ -1320,7 +1320,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-5">
+<div class="pg" data-page="detail-5" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🏠 家具・家電のロープレ</div>
@@ -1353,7 +1353,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-6">
+<div class="pg" data-page="detail-6" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🪙 記念硬貨・金貨・小判のロープレ</div>
@@ -1386,7 +1386,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-7">
+<div class="pg" data-page="detail-7" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">📷 カメラ・レンズのロープレ</div>
@@ -1422,7 +1422,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-8">
+<div class="pg" data-page="detail-8" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">👜 ブランド品のロープレ</div>
@@ -1459,7 +1459,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-9">
+<div class="pg" data-page="detail-9" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🎁 贈答品のロープレ</div>
@@ -1492,7 +1492,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-10">
+<div class="pg" data-page="detail-10" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🎵 オーディオのロープレ</div>
@@ -1525,7 +1525,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-11">
+<div class="pg" data-page="detail-11" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">⌚ 時計のロープレ</div>
@@ -1559,7 +1559,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-12">
+<div class="pg" data-page="detail-12" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🖊️ 喫煙具・万年筆のロープレ</div>
@@ -1592,7 +1592,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-13">
+<div class="pg" data-page="detail-13" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">✨ メッキアクセサリー・小物のロープレ</div>
@@ -1632,7 +1632,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-14">
+<div class="pg" data-page="detail-14" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">💬 価格交渉・他店比較のロープレ</div>
@@ -1666,7 +1666,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-15">
+<div class="pg" data-page="detail-15" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">💍 ダイヤ・ジュエリーのロープレ</div>
@@ -1701,7 +1701,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-16">
+<div class="pg" data-page="detail-16" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🏺 骨董品・遺品整理のロープレ</div>
@@ -1736,7 +1736,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
     </ol>
   </div>
 </div>
-<div class="pg" data-page="detail-17">
+<div class="pg" data-page="detail-17" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('roleplay')">← ロープレ一覧へ戻る</button>
     <div class="pt">🎸 楽器のロープレ</div>
@@ -1777,7 +1777,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 
 
 <!-- ロープレ履歴ページ -->
-<div class="pg" data-page="rp-history">
+<div class="pg" data-page="rp-history" style="display:none;">
   <div class="ph">
     <button class="back-btn" onclick="GP('home')">← ホームへ戻る</button>
     <div class="pt">📊 ロープレ成績</div>
@@ -1789,7 +1789,7 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 </div>
 
 <!-- AIロープレ -->
-<div class="pg" data-page="rp-mode">
+<div class="pg" data-page="rp-mode" style="display:none;">
   <div class="ph">
     <button class="back-btn" id="rp-back-btn" onclick="rpBackBtn()">← ホームへ戻る</button>
     <div class="pt">🎭 AIロープレ</div>
