@@ -346,10 +346,14 @@ body{font-family:-apple-system,'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;b
 <script>
 // Supabase動的読み込み（失敗してもメイン機能に影響しない）
 (function() {
-  var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-  s.onerror = function() { console.log('Supabase load failed'); };
-  document.head.appendChild(s);
+  try {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.async = true;
+    s.onerror = function() { console.log('Supabase load failed - login features disabled'); };
+    s.onload = function() { if (typeof initSupabase === 'function') initSupabase(); };
+    document.head.appendChild(s);
+  } catch(e) { console.log('Supabase init error:', e); }
 })();
 </script>
 </head>
@@ -7001,7 +7005,6 @@ if (!localStorage.getItem('hanamaru_gemini_key')) {
 function initApp() {
   GP('home');
   renderExtraManuals();
-  initSupabase();
 }
 
 // 複数のタイミングで確実に初期化
